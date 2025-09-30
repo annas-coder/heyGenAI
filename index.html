@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/vite.svg" type="image/svg+xml" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <title>Interactive Avatar Demo</title>
+  </head>
+
+  <body>
+    <main
+      class="container"
+      style="display: flex; flex-direction: column; align-items: center"
+    >
+      <h1>Interactive Avatar Demo (Vite + TypeScript)</h1>
+
+      <!-- Video Section -->
+      <article style="width: fit-content">
+        <video id="avatarVideo" autoplay playsinline></video>
+      </article>
+
+      <!-- Controls Section -->
+      <section>
+        <section role="group">
+          <button id="startSession">Start Session</button>
+          <button id="endSession" disabled>End Session</button>
+        </section>
+
+        <section role="group">
+          <input
+            type="text"
+            id="userInput"
+            placeholder="Type something to talk to the avatar..."
+            aria-label="User input"
+          />
+          <button id="speakButton" role="button">Speak</button>
+        </section>
+        
+        <!-- Progress indicator for streaming responses -->
+        <section id="progressSection" style="display: none; margin-top: 1rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div id="progressBar" style="flex: 1; height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden;">
+              <div id="progressFill" style="height: 100%; background: #007bff; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+            <span id="progressText" style="font-size: 0.8rem; color: #666;">Processing...</span>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
