@@ -6,6 +6,7 @@ import StreamingAvatar, {
 } from "@heygen/streaming-avatar";
 
 // import { OpenAIAssistant } from "./openai-assistant";
+import { VoiceRecorder } from "./audio-handler";
 
 // let openaiAssistant: OpenAIAssistant | null = null;
 
@@ -16,13 +17,18 @@ const avatarInterface = document.getElementById("avatarInterface") as HTMLElemen
 const getStartedBtn = document.getElementById("getStartedBtn") as HTMLButtonElement;
 const endButton = document.getElementById("endSession") as HTMLButtonElement;
 const speakButton = document.getElementById("speakButton") as HTMLButtonElement;
+const recordButton = document.getElementById("recordButton") as HTMLButtonElement;
+const waveformContainer = document.getElementById("waveformContainer") as HTMLElement;
 const userInput = document.getElementById("userInput") as HTMLInputElement;
 const progressSection = document.getElementById("progressSection") as HTMLElement;
 const progressFill = document.getElementById("progressFill") as HTMLElement;
 const progressText = document.getElementById("progressText") as HTMLElement;
+const recordingStatus = document.getElementById("recordingStatus") as HTMLDivElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
+let voiceRecorder: VoiceRecorder | null = null;
+let isRecording = false;
 
 // Helper function to fetch access token
 async function fetchAccessToken(): Promise<string> {
@@ -51,6 +57,75 @@ async function fetchAccessToken(): Promise<string> {
   }
   
   return data.token;
+}
+
+// Speech-to-speech functionality
+async function speakText(text: string) {
+  if (avatar && text.trim()) {
+    // Show progress indicator
+    progressSection.style.display = "block";
+    progressFill.style.width = "0%";
+    progressText.textContent = "Getting AI response...";
+    
+    try {
+      console.log('Sending transcribed text to API:', text);
+      
+      // Send to your API endpoint
+      const llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      
+      console.log('API Response:', llmResponse);
+      const { output } = await llmResponse.json();
+      
+      console.log('AI Response text:', output);
+      progressText.textContent = "Avatar is speaking...";
+      
+      // Make avatar speak the API response
+      await avatar.speak({
+        text: output,
+        task_type: TaskType.TALK,
+        taskMode: TaskMode.SYNC
+      });
+      
+    } catch (error) {
+      console.error("Error processing speech:", error);
+      progressSection.style.display = "none";
+    }
+  }
+}
+
+function initializeVoiceRecorder() {
+  voiceRecorder = new VoiceRecorder(
+    (status) => { 
+      recordingStatus.textContent = status;
+    },
+    (text) => {
+      speakText(text);
+    }
+  );
+}
+
+async function toggleRecording() {
+  if (!voiceRecorder) {
+    initializeVoiceRecorder();
+  }
+
+  if (!isRecording) {
+    // Start recording
+    recordButton.classList.add("recording");
+    waveformContainer.classList.add("active");
+    await voiceRecorder?.startRecording();
+    isRecording = true;
+  } else {
+    // Stop recording
+    recordButton.classList.remove("recording");
+    waveformContainer.classList.remove("active");
+    voiceRecorder?.stopRecording();
+    isRecording = false;
+  }
 }
 
 
@@ -226,6 +301,15 @@ async function terminateAvatarSession() {
     <span>Send</span>
   `;
   
+  // Reset recording state
+  if (isRecording && voiceRecorder) {
+    voiceRecorder.stopRecording();
+    isRecording = false;
+  }
+  recordButton.classList.remove("recording");
+  waveformContainer.classList.remove("active");
+  recordingStatus.textContent = "";
+  
   // Re-enable get started button
   getStartedBtn.disabled = false;
   getStartedBtn.innerHTML = '<span>Get Started</span><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -236,6 +320,7 @@ async function terminateAvatarSession() {
 getStartedBtn.addEventListener("click", initializeAvatarSession);
 endButton.addEventListener("click", terminateAvatarSession);
 speakButton.addEventListener("click", handleSpeak);
+recordButton.addEventListener("click", toggleRecording);
 
 // Add Enter key listener for input field
 userInput.addEventListener("keypress", (event) => {

@@ -175,10 +175,7 @@
       }
 
       #userInput:focus {
-        border-color: #1e40af;
         outline: none;
-        box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.1);
-        transform: translateY(-1px);
       }
 
       #userInput::placeholder {
@@ -197,12 +194,6 @@
         backdrop-filter: blur(10px);
       }
 
-      .controls-card {
-        background: #ffffff;
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-      }
 
       #progressSection {
         margin-top: 1.5rem;
@@ -242,17 +233,16 @@
         gap: 0.75rem;
         align-items: center;
         background: #ffffff;
-        padding: 0.5rem;
+        padding: 0.75rem;
         border-radius: 16px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        border: 2px solid #f3f4f6;
+        border: 2px solid #e5e7eb;
         transition: all 0.3s ease;
       }
 
       section[role="group"]:focus-within {
         border-color: #3b82f6;
-        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
-        transform: translateY(-1px);
+        background: #ffffff;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
       }
 
       section[role="group"] input {
@@ -405,6 +395,180 @@
         transform: rotate(90deg);
       }
 
+      /* Controls Wrapper */
+      .controls-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      /* Voice Recording Card */
+      .voice-recording-card {
+        background: #ffffff;
+        border-radius: 28px;
+        padding: 4rem 3rem 3rem 3rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+        margin-bottom: 0;
+      }
+
+      /* Text Input Card */
+      .text-input-card {
+        background: #ffffff;
+        border-radius: 28px;
+        padding: 3rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      }
+
+      /* Voice Recording Interface */
+      .voice-recording-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3rem;
+        padding: 2rem;
+        min-height: 140px;
+      }
+
+      .mic-button {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: #2d2d2d;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .mic-button::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        transform: scale(0);
+        transition: transform 0.3s ease;
+      }
+
+      .mic-button:hover::before {
+        transform: scale(1);
+      }
+
+      .mic-button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .mic-button:active {
+        transform: scale(0.98);
+      }
+
+      .mic-icon {
+        width: 36px;
+        height: 36px;
+        fill: white;
+        stroke: white;
+        transition: all 0.3s ease;
+      }
+
+      .mic-button.recording {
+        background: #ef4444;
+        animation: micPulse 1.5s ease-in-out infinite;
+      }
+
+      .mic-button.recording .mic-icon {
+        animation: micScale 1.5s ease-in-out infinite;
+      }
+
+      @keyframes micPulse {
+        0%, 100% {
+          box-shadow: 0 8px 30px rgba(239, 68, 68, 0.3);
+        }
+        50% {
+          box-shadow: 0 8px 40px rgba(239, 68, 68, 0.6);
+        }
+      }
+
+      @keyframes micScale {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+      }
+
+      /* Waveform Animation */
+      .waveform-container {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        height: 70px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        flex: 1;
+        max-width: 400px;
+      }
+
+      .waveform-container.active {
+        opacity: 1;
+      }
+
+      .waveform-bar {
+        width: 5px;
+        height: 10px;
+        background: linear-gradient(180deg, #2d2d2d 0%, #555 100%);
+        border-radius: 4px;
+        animation: waveform 1.2s ease-in-out infinite;
+        flex: 1;
+      }
+
+      .waveform-bar:nth-child(1) { animation-delay: 0s; }
+      .waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+      .waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+      .waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+      .waveform-bar:nth-child(5) { animation-delay: 0.4s; }
+      .waveform-bar:nth-child(6) { animation-delay: 0.5s; }
+      .waveform-bar:nth-child(7) { animation-delay: 0.6s; }
+      .waveform-bar:nth-child(8) { animation-delay: 0.7s; }
+      .waveform-bar:nth-child(9) { animation-delay: 0.8s; }
+      .waveform-bar:nth-child(10) { animation-delay: 0.9s; }
+      .waveform-bar:nth-child(11) { animation-delay: 1.0s; }
+      .waveform-bar:nth-child(12) { animation-delay: 0.9s; }
+      .waveform-bar:nth-child(13) { animation-delay: 0.8s; }
+      .waveform-bar:nth-child(14) { animation-delay: 0.7s; }
+      .waveform-bar:nth-child(15) { animation-delay: 0.6s; }
+      .waveform-bar:nth-child(16) { animation-delay: 0.5s; }
+      .waveform-bar:nth-child(17) { animation-delay: 0.4s; }
+      .waveform-bar:nth-child(18) { animation-delay: 0.3s; }
+      .waveform-bar:nth-child(19) { animation-delay: 0.2s; }
+      .waveform-bar:nth-child(20) { animation-delay: 0.1s; }
+
+      @keyframes waveform {
+        0%, 100% {
+          height: 10px;
+        }
+        50% {
+          height: 55px;
+        }
+      }
+
+      .recording-status {
+        text-align: center;
+        font-size: 0.9rem;
+        color: #6b7280;
+        min-height: 28px;
+        margin-top: 1.5rem;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+      }
+
       @keyframes fadeInUp {
         from {
           opacity: 0;
@@ -469,28 +633,76 @@
       </div>
 
       <!-- Controls Section -->
-      <div class="controls-card" style="width: 100%; max-width: 800px;">
-        <section role="group">
-          <input
-            type="text"
-            id="userInput"
-            placeholder="Type your message here..."
-            aria-label="User input"
-          />
-          <button id="speakButton" role="button">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-            <span>Send</span>
-          </button>
-          <button id="endSession" title="Close Avatar">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M18 6L6 18M6 6L18 18"/>
-            </svg>
-            <span>Close</span>
-          </button>
-        </section>
+      <div class="controls-wrapper" style="width: 100%; max-width: 900px;">
+        
+        <!-- Voice Recording Interface -->
+        <div class="voice-recording-card">
+          <div class="voice-recording-container">
+            <button id="recordButton" class="mic-button" title="Click to record">
+              <svg class="mic-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" x2="12" y1="19" y2="22" stroke="currentColor" stroke-width="2"/>
+                <line x1="8" x2="16" y1="22" y2="22" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+            
+            <!-- Waveform Animation -->
+            <div class="waveform-container" id="waveformContainer">
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+              <div class="waveform-bar"></div>
+            </div>
+          </div>
+          
+          <!-- Voice Recording Status -->
+          <div id="recordingStatus" class="recording-status"></div>
+        </div>
+
+        <!-- Divider -->
+        <div style="text-align: center; color: #9ca3af; font-size: 0.875rem; margin: 2rem 0; font-weight: 500;">or</div>
+        
+        <!-- Text Input Section -->
+        <div class="text-input-card">
+          <section role="group">
+            <input
+              type="text"
+              id="userInput"
+              placeholder="Type your message here..."
+              aria-label="User input"
+            />
+            <button id="speakButton" role="button">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+              <span>Send</span>
+            </button>
+            <button id="endSession" title="Close Avatar">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M18 6L6 18M6 6L18 18"/>
+              </svg>
+              <span>Close</span>
+            </button>
+          </section>
+        </div>
         
         <!-- Progress indicator for streaming responses -->
         <section id="progressSection" style="display: none;">
