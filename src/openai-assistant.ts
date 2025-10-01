@@ -72,7 +72,7 @@ export class OpenAIAssistant {
   // New streaming method for better HeyGen avatar integration
   async getStreamingResponse(
     userMessage: string,
-    onChunk: (chunk: string) => void,
+    _onChunk: (chunk: string) => void,
     onComplete: (fullResponse: string) => void
   ): Promise<void> {
     if (!this.assistant || !this.thread) {
@@ -86,12 +86,11 @@ export class OpenAIAssistant {
         content: userMessage,
       });
 
-      // Create and run the assistant with streaming
+      // Create and run the assistant
       const run = await this.client.beta.threads.runs.createAndPoll(
         this.thread.id,
         { 
-          assistant_id: this.assistant.id,
-          stream: true 
+          assistant_id: this.assistant.id
         }
       );
 
