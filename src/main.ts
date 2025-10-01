@@ -5,15 +5,15 @@ import StreamingAvatar, {
   TaskType
 } from "@heygen/streaming-avatar";
 
-import { OpenAIAssistant } from "./openai-assistant";
+// import { OpenAIAssistant } from "./openai-assistant";
 
-let openaiAssistant: OpenAIAssistant | null = null;
+// let openaiAssistant: OpenAIAssistant | null = null;
 
 // DOM elements
 const videoElement = document.getElementById("avatarVideo") as HTMLVideoElement;
-const startButton = document.getElementById(
-  "startSession"
-) as HTMLButtonElement;
+const welcomeScreen = document.getElementById("welcomeScreen") as HTMLElement;
+const avatarInterface = document.getElementById("avatarInterface") as HTMLElement;
+const getStartedBtn = document.getElementById("getStartedBtn") as HTMLButtonElement;
 const endButton = document.getElementById("endSession") as HTMLButtonElement;
 const speakButton = document.getElementById("speakButton") as HTMLButtonElement;
 const userInput = document.getElementById("userInput") as HTMLInputElement;
@@ -56,13 +56,13 @@ async function fetchAccessToken(): Promise<string> {
 
 // Initialize streaming avatar session
 async function initializeAvatarSession() {
-  // Disable start button immediately to prevent double clicks
-  startButton.disabled = true;
-  startButton.textContent = "Starting...";
+  // Disable get started button and show loading state
+  getStartedBtn.disabled = true;
+  getStartedBtn.innerHTML = '<span>Loading...</span>';
 
   try {
     const token = await fetchAccessToken();
-    avatar = new StreamingAvatar({ token });` `
+    avatar = new StreamingAvatar({ token });
 
     // Initialize OpenAI Assistant
     const openaiApiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -77,10 +77,22 @@ async function initializeAvatarSession() {
     avatar.on(StreamingEvents.STREAM_DISCONNECTED, handleStreamDisconnected);
     avatar.on(StreamingEvents.AVATAR_START_TALKING, (data) => {
       console.log("▶️ Avatar started talking", data);
+      // Update progress text while avatar is speaking
+      progressText.textContent = "Avatar is speaking...";
     });
 
     avatar.on(StreamingEvents.AVATAR_STOP_TALKING, (data) => {
       console.log("⏹️ Avatar stopped talking", data);
+      // Re-enable speak button after avatar finishes speaking
+      progressSection.style.display = "none";
+      speakButton.disabled = false;
+      speakButton.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+        <span>Send</span>
+      `;
     });
     
     sessionData = await avatar.createStartAvatar({
@@ -91,16 +103,17 @@ async function initializeAvatarSession() {
 
     console.log("Session data:", sessionData);
 
-    // Enable end button
-    endButton.disabled = false;
-    startButton.textContent = "Start Session";
+    // Hide welcome screen and show avatar interface
+    welcomeScreen.style.display = "none";
+    avatarInterface.style.display = "flex";
+    avatarInterface.classList.add("fade-in");
 
   } catch (error) {
     console.error("Failed to initialize avatar session:", error);
     alert(`Failed to initialize avatar session: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    // Re-enable start button if initialization fails
-    startButton.disabled = false;
-    startButton.textContent = "Start Session";
+    // Re-enable get started button if initialization fails
+    getStartedBtn.disabled = false;
+    getStartedBtn.innerHTML = '<span>Get Started</span><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
 }
 
@@ -109,7 +122,13 @@ async function handleSpeak() {
   if (avatar && userInput.value) {
     // Disable speak button and show loading state
     speakButton.disabled = true;
-    speakButton.textContent = "Processing...";
+    speakButton.innerHTML = `
+      <svg class="loading-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+        <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
+      </svg>
+      <span>Sending...</span>
+    `;
     
     // Show progress indicator
     progressSection.style.display = "block";
@@ -117,7 +136,7 @@ async function handleSpeak() {
     progressText.textContent = "Processing...";
     
     const userMessage = userInput.value;
-    // userInput.value = ""; // Clear input immediately
+    userInput.value = ""; // Clear input immediately
     
     
     try {
@@ -139,6 +158,8 @@ async function handleSpeak() {
         });
       }
 
+      // Note: Button will be re-enabled when AVATAR_STOP_TALKING event fires
+
     } catch (error) {
       console.error("Error getting streaming response:", error);
       alert(`Error getting response: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -146,7 +167,13 @@ async function handleSpeak() {
       // Hide progress indicator and reset button state
       progressSection.style.display = "none";
       speakButton.disabled = false;
-      speakButton.textContent = "Speak";
+      speakButton.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+        <span>Send</span>
+      `;
     }
   }
 }
@@ -170,9 +197,9 @@ function handleStreamDisconnected() {
     videoElement.srcObject = null;
   }
 
-  // Enable start button and disable end button
-  startButton.disabled = false;
-  endButton.disabled = true;
+  // Return to welcome screen
+  avatarInterface.style.display = "none";
+  welcomeScreen.style.display = "flex";
 }
 
 // End the avatar session
@@ -182,10 +209,37 @@ async function terminateAvatarSession() {
   await avatar.stopAvatar();
   videoElement.srcObject = null;
   avatar = null;
+  
+  // Hide avatar interface and show welcome screen
+  avatarInterface.style.display = "none";
+  welcomeScreen.style.display = "flex";
+  
+  // Reset UI elements
+  userInput.value = "";
+  progressSection.style.display = "none";
+  speakButton.disabled = false;
+  speakButton.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"></line>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+    </svg>
+    <span>Send</span>
+  `;
+  
+  // Re-enable get started button
+  getStartedBtn.disabled = false;
+  getStartedBtn.innerHTML = '<span>Get Started</span><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 }
 
 
 // Event listeners for buttons
-startButton.addEventListener("click", initializeAvatarSession);
+getStartedBtn.addEventListener("click", initializeAvatarSession);
 endButton.addEventListener("click", terminateAvatarSession);
 speakButton.addEventListener("click", handleSpeak);
+
+// Add Enter key listener for input field
+userInput.addEventListener("keypress", (event) => {
+  if (event.key === "Enter" && !speakButton.disabled) {
+    handleSpeak();
+  }
+});
