@@ -28,6 +28,12 @@ const textInputBtn = document.getElementById("textInputBtn") as HTMLButtonElemen
 const languageSelect = document.getElementById("languageSelect") as HTMLSelectElement;
 const chatMessages = document.getElementById("chatMessages") as HTMLElement;
 const clearChatBtn = document.getElementById("clearChatBtn") as HTMLButtonElement;
+const closeChatBtn = document.getElementById("closeChatBtn") as HTMLButtonElement;
+// const voiceModeBtn = document.getElementById("voiceModeBtn") as HTMLButtonElement;
+const chatSidebar = document.querySelector(".chat-sidebar") as HTMLElement;
+const avatarMainContent = document.querySelector(".avatar-main-content") as HTMLElement;
+const recordingStatus = document.getElementById("recordingStatus") as HTMLElement;
+const waveformContainer = document.querySelector(".waveform-container") as HTMLElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
@@ -65,80 +71,180 @@ async function fetchAccessToken(): Promise<string> {
 
 // Speech-to-speech functionality
 async function speakText(text: string) {
-  if (avatar && text.trim()) {
-    // Show progress indicator
-    progressSection.style.display = "block";
-    progressFill.style.width = "0%";
-    progressText.textContent = "Getting AI response...";
+  console.log("🎤 speakText called with:", text);
+  
+  if (!avatar) {
+    console.error("❌ Avatar not initialized");
+    addChatMessage("Avatar not ready. Please try again.", false);
+    return;
+  }
+  
+  // Check if avatar is in a good state
+  if (avatar.getStatus && avatar.getStatus() !== 'ready') {
+    console.log("🎤 Avatar not ready, current status:", avatar.getStatus());
+    addChatMessage("Avatar is not ready. Please wait a moment and try again.", false);
+    return;
+  }
+  
+  if (!text || !text.trim()) {
+    console.error("❌ Empty text provided");
+    return;
+  }
+  
+  try {
+    console.log('🎤 Processing voice input:', text);
     
-    try {
-      console.log('Sending transcribed text to API:', text);
-      
-      // Send to your API endpoint
-      const llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text })
-      });
-      
-      console.log('API Response:', llmResponse);
-      const { output } = await llmResponse.json();
-      
-      console.log('AI Response text:', output);
-      progressText.textContent = "Avatar is speaking...";
-      
-      // Update subtitle with the response
-      updateSubtitle(output);
-      
-      // Add bot response to chat
-      addChatMessage(output, false);
-      
-      // Make avatar speak the API response
-      await avatar.speak({
-        text: output,
-        task_type: TaskType.TALK,
-        taskMode: TaskMode.SYNC
-      });
-      
-    } catch (error) {
-      console.error("Error processing speech:", error);
-      if (progressSection) {
-        progressSection.style.display = "none";
-      }
-      // Add error message to chat
-      addChatMessage("Sorry, I couldn't process your voice message. Please try again.", false);
+    // Show progress indicator
+    if (progressSection) {
+      progressSection.style.display = "block";
     }
+    if (progressFill) {
+      progressFill.style.width = "0%";
+    }
+    if (progressText) {
+      progressText.textContent = "Getting AI response...";
+    }
+    
+    // Send to your API endpoint
+    console.log('📡 Sending to API:', text);
+    const llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    
+    console.log('📡 API Response status:', llmResponse.status);
+    
+    if (!llmResponse.ok) {
+      throw new Error(`API request failed with status ${llmResponse.status}`);
+    }
+    
+    const responseData = await llmResponse.json();
+    console.log('📡 API Response data:', responseData);
+    
+    const output = responseData.output || responseData.message || "I didn't understand that. Please try again.";
+    console.log('🤖 AI Response text:', output);
+    
+    if (progressText) {
+      progressText.textContent = "Avatar is speaking...";
+    }
+    
+    // Update subtitle with the response
+    updateSubtitle(output);
+    
+    // Add bot response to chat
+    addChatMessage(output, false);
+    
+    // Make avatar speak the API response
+    console.log('🎭 Making avatar speak:', output);
+    await avatar.speak({
+      text: output,
+      task_type: TaskType.TALK,
+      taskMode: TaskMode.SYNC
+    });
+    
+    console.log('✅ Avatar speaking completed');
+    
+  } catch (error) {
+    console.error("❌ Error processing speech:", error);
+    if (progressSection) {
+      progressSection.style.display = "none";
+    }
+    // Add error message to chat
+    addChatMessage("Sorry, I couldn't process your voice message. Please try again.", false);
   }
 }
 
 function initializeVoiceRecorder() {
+  console.log("🎤 Initializing voice recorder...");
   voiceRecorder = new VoiceRecorder(
     (status) => { 
-      recordingStatus.textContent = status;
+      console.log("🎤 Status:", status);
+      if (recordingStatus) {
+        recordingStatus.textContent = status;
+        if (status) {
+          recordingStatus.style.display = "flex";
+        } else {
+          recordingStatus.style.display = "none";
+        }
+      }
     },
     (text) => {
-      speakText(text);
+      console.log("🎤 Transcription received:", text);
+      if (text && text.trim().length > 0) {
+        console.log("🎤 Processing transcribed text:", text);
+        // Add user message to chat
+        addChatMessage(text, true);
+        // Process the text
+        speakText(text);
+      } else {
+        console.log("🎤 Empty transcription, not processing");
+        addChatMessage("I didn't catch that. Please try speaking again.", false);
+      }
+      // Hide recording status after transcription
+      if (recordingStatus) {
+        recordingStatus.style.display = "none";
+      }
     }
   );
 }
 
 async function toggleRecording() {
-  if (!voiceRecorder) {
-    initializeVoiceRecorder();
-  }
+  try {
+    console.log("🎤 toggleRecording called, isRecording:", isRecording);
+    
+    if (!voiceRecorder) {
+      console.log("🎤 Creating new voice recorder...");
+      initializeVoiceRecorder();
+      // Wait a bit for initialization
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
 
-  if (!isRecording) {
-    // Start recording
-    recordButton.classList.add("recording");
-    waveformContainer.classList.add("active");
-    await voiceRecorder?.startRecording();
-    isRecording = true;
-  } else {
-    // Stop recording
-    recordButton.classList.remove("recording");
-    waveformContainer.classList.remove("active");
-    voiceRecorder?.stopRecording();
+    if (!isRecording) {
+      console.log("🎤 Starting recording...");
+      // Start recording
+      if (recordButton) {
+        recordButton.classList.add("recording");
+      }
+      if (waveformContainer) {
+        waveformContainer.classList.add("active");
+      }
+      if (recordingStatus) {
+        recordingStatus.style.display = "flex";
+        recordingStatus.textContent = "🎤 Recording... Speak now!";
+      }
+      await voiceRecorder?.startRecording();
+      isRecording = true;
+      console.log("🎤 Recording started successfully");
+    } else {
+      console.log("🎤 Stopping recording...");
+      // Stop recording
+      if (recordButton) {
+        recordButton.classList.remove("recording");
+      }
+      if (waveformContainer) {
+        waveformContainer.classList.remove("active");
+      }
+      if (recordingStatus) {
+        recordingStatus.textContent = "🔄 Processing audio...";
+      }
+      voiceRecorder?.stopRecording();
+      isRecording = false;
+      console.log("🎤 Recording stopped successfully");
+    }
+  } catch (error) {
+    console.error("❌ Error in toggleRecording:", error);
+    // Reset recording state on error
     isRecording = false;
+    if (recordButton) {
+      recordButton.classList.remove("recording");
+    }
+    if (waveformContainer) {
+      waveformContainer.classList.remove("active");
+    }
+    if (recordingStatus) {
+      recordingStatus.textContent = "❌ Recording error. Please try again.";
+    }
   }
 }
 
@@ -253,6 +359,20 @@ async function initializeAvatarSession() {
     welcomeScreen.style.display = "none";
     avatarInterface.style.display = "flex";
     avatarInterface.classList.add("fade-in");
+    
+    // Chat sidebar is closed by default (full screen avatar)
+    // Avatar takes full screen width by default
+    if (avatarMainContent) {
+      avatarMainContent.classList.remove("chat-open");
+    }
+    
+    // Ensure both buttons are visible by default
+    if (recordButton) {
+      recordButton.style.display = "flex";
+    }
+    if (textInputBtn) {
+      textInputBtn.style.display = "flex";
+    }
     
     // Update subtitle with welcome message
     if (avatarSubtitle) {
@@ -430,40 +550,133 @@ function handleStreamReady(event: any) {
     console.log("🎥 Stream ready, setting video source");
     videoElement.srcObject = event.detail;
     
-    // Ensure video plays smoothly and doesn't blackout
+    // Set video properties for stability
+    videoElement.loop = false;
+    videoElement.muted = false;
+    videoElement.autoplay = true;
+    videoElement.playsInline = true;
+    
+    // Enhanced video event handling for stability
     videoElement.addEventListener('loadstart', () => {
       console.log("📹 Video loading started");
     });
     
     videoElement.addEventListener('canplay', () => {
       console.log("📹 Video can play");
+      // Ensure video plays smoothly with retry mechanism
+      const playVideo = () => {
+        videoElement.play().then(() => {
+          console.log("✅ Video playing successfully");
+        }).catch((error) => {
+          console.error("❌ Video play failed:", error);
+          // Retry with exponential backoff
+          setTimeout(() => {
+            console.log("🔄 Retrying video play...");
+            playVideo();
+          }, 2000);
+        });
+      };
+      playVideo();
     });
     
     videoElement.addEventListener('error', (e) => {
       console.error("📹 Video error:", e);
+      // Enhanced error recovery
+      setTimeout(() => {
+        if (videoElement.srcObject) {
+          console.log("🔄 Attempting video recovery...");
+          videoElement.load();
+        }
+      }, 1000);
     });
     
-    // Add event listener for when video is about to play
-    videoElement.addEventListener('play', () => {
+    videoElement.addEventListener('stalled', () => {
+      console.log("📹 Video stalled - attempting recovery");
+      // Multiple recovery attempts
+      let retryCount = 0;
+      const maxRetries = 3;
+      const retryStalled = () => {
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`🔄 Stalled recovery attempt ${retryCount}/${maxRetries}`);
+          videoElement.load();
+          setTimeout(retryStalled, 2000);
+        }
+      };
+      retryStalled();
+    });
+    
+    videoElement.addEventListener('waiting', () => {
+      console.log("📹 Video waiting for data");
+      // Show loading indicator
+      if (progressSection) {
+        progressSection.style.display = "block";
+        progressText.textContent = "Buffering video...";
+      }
+    });
+    
+    videoElement.addEventListener('playing', () => {
       console.log("📹 Video started playing");
+      // Hide loading indicator
+      if (progressSection) {
+        progressSection.style.display = "none";
+      }
     });
     
-    // Add event listener for when video pauses
     videoElement.addEventListener('pause', () => {
-      console.log("📹 Video paused");
+      console.log("📹 Video paused - attempting to resume");
+      // Auto-resume if paused unexpectedly
+      setTimeout(() => {
+        if (videoElement.paused) {
+          videoElement.play().catch(console.error);
+        }
+      }, 1000);
     });
     
-    // Add event listener for when video ends
     videoElement.addEventListener('ended', () => {
-      console.log("📹 Video ended");
+      console.log("📹 Video ended - attempting to restart");
+      // Restart video if it ends unexpectedly
+      setTimeout(() => {
+        videoElement.play().catch(console.error);
+      }, 500);
     });
+    
+    // Monitor video health
+    const videoHealthMonitor = setInterval(() => {
+      if (videoElement) {
+        // Check if video is paused unexpectedly
+        if (videoElement.paused && !videoElement.ended) {
+          console.log("🔄 Video paused unexpectedly - resuming");
+          videoElement.play().catch(console.error);
+        }
+        
+        // Check if video has no source but should be playing
+        if (!videoElement.srcObject && avatar) {
+          console.log("🔄 Video lost source - attempting recovery");
+          // Try to get the stream again
+          if (avatar.getStream) {
+            const stream = avatar.getStream();
+            if (stream) {
+              videoElement.srcObject = stream;
+            }
+          }
+        }
+        
+        // Check video quality and stability
+        if (videoElement.readyState < 2) {
+          console.log("🔄 Video not ready - attempting reload");
+          videoElement.load();
+        }
+      }
+    }, 5000);
+    
+    // Store the interval ID for cleanup
+    (window as any).videoHealthMonitor = videoHealthMonitor;
     
     videoElement.onloadedmetadata = () => {
+      console.log("📹 Video metadata loaded");
       videoElement.play().then(() => {
         console.log("✅ Video playing successfully");
-        // Keep video playing continuously
-        videoElement.loop = false;
-        videoElement.muted = false;
       }).catch((error) => {
         console.error("❌ Video play failed:", error);
         // Retry playing after a short delay
@@ -480,29 +693,58 @@ function handleStreamReady(event: any) {
 // Handle stream disconnection
 function handleStreamDisconnected() {
   console.log("Stream disconnected");
+  
+  // Don't immediately clear the video - keep it playing if possible
   if (videoElement) {
-    // Don't immediately clear the video - keep it playing if possible
     console.log("Stream disconnected but keeping video for stability");
-    // Only clear if it's a real disconnection
+    
+    // Try to recover the stream first
+    setTimeout(() => {
+      if (videoElement && !videoElement.srcObject) {
+        console.log("Attempting stream recovery...");
+        // Try to reinitialize the avatar session
+        if (avatar) {
+          console.log("Reinitializing avatar session...");
+          initializeAvatarSession();
+        }
+      }
+    }, 2000);
+    
+    // Only clear if it's a real disconnection after multiple attempts
     setTimeout(() => {
       if (videoElement && !videoElement.srcObject) {
         console.log("Clearing video after timeout");
         videoElement.srcObject = null;
       }
-    }, 5000);
+    }, 10000);
   }
 
-  // Only return to welcome screen if it's an actual disconnection
-  // Don't redirect for normal avatar responses
-  console.log("Stream disconnected - but staying in avatar interface for now");
-  // Commented out the redirect to prevent unwanted page changes
-  // avatarInterface.style.display = "none";
-  // welcomeScreen.style.display = "flex";
+  // Don't redirect for normal avatar responses or temporary disconnections
+  console.log("Stream disconnected - staying in avatar interface");
+  
+  // Show user feedback about the disconnection
+  if (avatarSubtitle) {
+    avatarSubtitle.textContent = "Connection lost. Attempting to reconnect...";
+  }
+  
+  // Try to reconnect after a delay
+  setTimeout(() => {
+    if (avatar) {
+      console.log("Attempting to reconnect avatar...");
+      initializeAvatarSession();
+    }
+  }, 3000);
 }
 
 // End the avatar session
 async function terminateAvatarSession() {
   if (!avatar || !sessionData) return;
+  
+  // Clear video health monitor
+  if ((window as any).videoHealthMonitor) {
+    clearInterval((window as any).videoHealthMonitor);
+    (window as any).videoHealthMonitor = null;
+  }
 
   await avatar.stopAvatar();
   videoElement.srcObject = null;
@@ -592,12 +834,20 @@ userInput.addEventListener("keydown", (event) => {
 if (textInputBtn) {
   textInputBtn.addEventListener("click", () => {
     console.log("Text input clicked");
-    // Show text input area and hide voice controls
+    // Show chat sidebar
+    if (chatSidebar) {
+      chatSidebar.classList.add("open");
+    }
+    // Make avatar smaller when chat is open
+    if (avatarMainContent) {
+      avatarMainContent.classList.add("chat-open");
+    }
+    // Show text input area but keep voice button visible
     if (textInputArea) {
       textInputArea.style.display = "flex";
-      // Hide voice button when text is active
+      // Keep voice button visible - don't hide it
       if (recordButton) {
-        recordButton.style.display = "none";
+        recordButton.style.display = "flex";
       }
       // Ensure input is focused and ready
       setTimeout(() => {
@@ -612,15 +862,63 @@ if (textInputBtn) {
   });
 }
 
-// Show voice button when voice is selected
+// Voice button click handler
 if (recordButton) {
   recordButton.addEventListener("click", () => {
-    // Show voice button and hide text input
+    // Close chat sidebar when voice is selected
+    if (chatSidebar) {
+      chatSidebar.classList.remove("open");
+    }
+    // Make avatar full screen
+    if (avatarMainContent) {
+      avatarMainContent.classList.remove("chat-open");
+    }
+    // Hide text input area but keep voice button visible
     if (textInputArea) {
       textInputArea.style.display = "none";
     }
+    // Voice button is always visible
     if (recordButton) {
       recordButton.style.display = "flex";
+    }
+  });
+  
+  // Add mouse events for hold to speak
+  recordButton.addEventListener("mousedown", () => {
+    console.log("🎤 Mouse down - starting recording");
+    if (voiceRecorder && !isRecording) {
+      toggleRecording();
+    }
+  });
+  
+  recordButton.addEventListener("mouseup", () => {
+    console.log("🎤 Mouse up - stopping recording");
+    if (voiceRecorder && isRecording) {
+      toggleRecording();
+    }
+  });
+  
+  recordButton.addEventListener("mouseleave", () => {
+    console.log("🎤 Mouse leave - stopping recording");
+    if (voiceRecorder && isRecording) {
+      toggleRecording();
+    }
+  });
+  
+  // Add touch events for mobile devices
+  recordButton.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    console.log("🎤 Touch start - starting recording");
+    if (voiceRecorder && !isRecording) {
+      toggleRecording();
+    }
+  });
+  
+  recordButton.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    console.log("🎤 Touch end - stopping recording");
+    if (voiceRecorder && isRecording) {
+      toggleRecording();
     }
   });
 }
@@ -640,6 +938,20 @@ if (clearChatBtn) {
     }
   });
 }
+
+// Close chat functionality
+if (closeChatBtn && chatSidebar) {
+  closeChatBtn.addEventListener("click", () => {
+    chatSidebar.classList.remove("open");
+    // Make avatar full screen when chat closes
+    if (avatarMainContent) {
+      avatarMainContent.classList.remove("chat-open");
+    }
+    console.log("Chat closed - avatar full screen");
+  });
+}
+
+// Voice mode button functionality removed - using close button instead
 
 if (languageSelect) {
   languageSelect.addEventListener("change", (event) => {
