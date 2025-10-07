@@ -18,12 +18,16 @@ const getStartedBtn = document.getElementById("getStartedBtn") as HTMLButtonElem
 const endButton = document.getElementById("endSession") as HTMLButtonElement;
 const speakButton = document.getElementById("speakButton") as HTMLButtonElement;
 const recordButton = document.getElementById("recordButton") as HTMLButtonElement;
-const waveformContainer = document.getElementById("waveformContainer") as HTMLElement;
 const userInput = document.getElementById("userInput") as HTMLInputElement;
 const progressSection = document.getElementById("progressSection") as HTMLElement;
 const progressFill = document.getElementById("progressFill") as HTMLElement;
 const progressText = document.getElementById("progressText") as HTMLElement;
-const recordingStatus = document.getElementById("recordingStatus") as HTMLDivElement;
+const avatarSubtitle = document.getElementById("avatarSubtitle") as HTMLElement;
+const textInputArea = document.getElementById("textInputArea") as HTMLElement;
+const textInputBtn = document.getElementById("textInputBtn") as HTMLButtonElement;
+const languageSelect = document.getElementById("languageSelect") as HTMLSelectElement;
+const chatMessages = document.getElementById("chatMessages") as HTMLElement;
+const clearChatBtn = document.getElementById("clearChatBtn") as HTMLButtonElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
@@ -83,6 +87,12 @@ async function speakText(text: string) {
       console.log('AI Response text:', output);
       progressText.textContent = "Avatar is speaking...";
       
+      // Update subtitle with the response
+      updateSubtitle(output);
+      
+      // Add bot response to chat
+      addChatMessage(output, false);
+      
       // Make avatar speak the API response
       await avatar.speak({
         text: output,
@@ -92,7 +102,11 @@ async function speakText(text: string) {
       
     } catch (error) {
       console.error("Error processing speech:", error);
-      progressSection.style.display = "none";
+      if (progressSection) {
+        progressSection.style.display = "none";
+      }
+      // Add error message to chat
+      addChatMessage("Sorry, I couldn't process your voice message. Please try again.", false);
     }
   }
 }
@@ -153,28 +167,40 @@ async function initializeAvatarSession() {
     avatar.on(StreamingEvents.AVATAR_START_TALKING, (data) => {
       console.log("▶️ Avatar started talking", data);
       // Update progress text while avatar is speaking
-      progressText.textContent = "Avatar is speaking...";
+      if (progressText) {
+        progressText.textContent = "Avatar is speaking...";
+      }
+      // Show progress overlay
+      if (progressSection) {
+        progressSection.style.display = "block";
+      }
     });
 
     avatar.on(StreamingEvents.AVATAR_STOP_TALKING, (data) => {
       console.log("⏹️ Avatar stopped talking", data);
-      // Re-enable speak button after avatar finishes speaking
-      progressSection.style.display = "none";
-      speakButton.disabled = false;
-      speakButton.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
-        <span>Send</span>
-      `;
+      // Hide progress overlay
+      if (progressSection) {
+        progressSection.style.display = "none";
+      }
+      // Re-enable controls
+      if (speakButton) {
+        speakButton.disabled = false;
+      }
+      if (recordButton) {
+        recordButton.disabled = false;
+      }
     });
+    
+    // Use default Wayne avatar
+    console.log("🚀 Using default Wayne avatar for immediate functionality");
     
     sessionData = await avatar.createStartAvatar({
       quality: AvatarQuality.High,
       avatarName: "Wayne_20240711",
       language: "English",
     });
+    
+    console.log("✅ Default Wayne avatar is working!", sessionData);
 
     console.log("Session data:", sessionData);
 
@@ -182,6 +208,11 @@ async function initializeAvatarSession() {
     welcomeScreen.style.display = "none";
     avatarInterface.style.display = "flex";
     avatarInterface.classList.add("fade-in");
+    
+    // Update subtitle with welcome message
+    if (avatarSubtitle) {
+      avatarSubtitle.textContent = "Hello, I am here to help you on your queries on insurance";
+    }
 
   } catch (error) {
     console.error("Failed to initialize avatar session:", error);
@@ -194,7 +225,16 @@ async function initializeAvatarSession() {
 
 // Handle speaking event with streaming (HeyGen recommended approach)
 async function handleSpeak() {
-  if (avatar && userInput.value) {
+  console.log("handleSpeak called");
+  if (!avatar) {
+    console.error("Avatar not initialized");
+    return;
+  }
+  
+  if (!userInput.value || userInput.value.trim() === "") {
+    console.log("No input text");
+    return;
+  }
     // Disable speak button and show loading state
     speakButton.disabled = true;
     speakButton.innerHTML = `
@@ -202,13 +242,18 @@ async function handleSpeak() {
         <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
         <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
       </svg>
-      <span>Sending...</span>
     `;
     
     // Show progress indicator
-    progressSection.style.display = "block";
-    progressFill.style.width = "0%";
-    progressText.textContent = "Processing...";
+    if (progressSection) {
+      progressSection.style.display = "block";
+    }
+    if (progressFill) {
+      progressFill.style.width = "0%";
+    }
+    if (progressText) {
+      progressText.textContent = "Processing...";
+    }
     
     const userMessage = userInput.value;
     userInput.value = ""; // Clear input immediately
@@ -224,6 +269,18 @@ async function handleSpeak() {
       console.log(llmResponse)
       const { output } = await llmResponse.json();
       
+      // Add user message to chat
+      addChatMessage(userMessage, true);
+      
+      // Update subtitle with the response
+      updateSubtitle(output);
+      
+      // Add bot response to chat
+      addChatMessage(output, false);
+      
+      // Keep text input area visible for continuous typing
+      // Don't hide text input area - let user continue typing
+      
       // First, let the avatar acknowledge the user input
       if (avatar ) {
         await avatar.speak({
@@ -237,21 +294,24 @@ async function handleSpeak() {
 
     } catch (error) {
       console.error("Error getting streaming response:", error);
-      alert(`Error getting response: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Add error message to chat
+      addChatMessage("Sorry, I encountered an error. Please try again.", false);
       
       // Hide progress indicator and reset button state
-      progressSection.style.display = "none";
-      speakButton.disabled = false;
-      speakButton.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
-        <span>Send</span>
-      `;
+      if (progressSection) {
+        progressSection.style.display = "none";
+      }
+      if (speakButton) {
+        speakButton.disabled = false;
+        speakButton.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        `;
+      }
     }
   }
-}
 
 // Handle when avatar stream is ready
 function handleStreamReady(event: any) {
@@ -272,9 +332,12 @@ function handleStreamDisconnected() {
     videoElement.srcObject = null;
   }
 
-  // Return to welcome screen
-  avatarInterface.style.display = "none";
-  welcomeScreen.style.display = "flex";
+  // Only return to welcome screen if it's an actual disconnection
+  // Don't redirect for normal avatar responses
+  console.log("Stream disconnected - but staying in avatar interface for now");
+  // Commented out the redirect to prevent unwanted page changes
+  // avatarInterface.style.display = "none";
+  // welcomeScreen.style.display = "flex";
 }
 
 // End the avatar session
@@ -324,7 +387,106 @@ recordButton.addEventListener("click", toggleRecording);
 
 // Add Enter key listener for input field
 userInput.addEventListener("keypress", (event) => {
-  if (event.key === "Enter" && !speakButton.disabled) {
-    handleSpeak();
+  if (event.key === "Enter") {
+    event.preventDefault(); // Prevent form submission
+    event.stopPropagation(); // Stop event bubbling
+    if (!speakButton.disabled) {
+      handleSpeak();
+    }
   }
 });
+
+// Also add keydown listener as backup
+userInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault(); // Prevent form submission
+    event.stopPropagation(); // Stop event bubbling
+    if (!speakButton.disabled) {
+      handleSpeak();
+    }
+  }
+});
+
+// New interface event listeners
+if (textInputBtn) {
+  textInputBtn.addEventListener("click", () => {
+    console.log("Text input clicked");
+    // Show text input area and hide voice controls
+    if (textInputArea) {
+      textInputArea.style.display = "flex";
+      // Hide voice button when text is active
+      if (recordButton) {
+        recordButton.style.display = "none";
+      }
+      setTimeout(() => {
+        if (userInput) {
+          userInput.focus();
+        }
+      }, 100);
+    }
+  });
+}
+
+// Show voice button when voice is selected
+if (recordButton) {
+  recordButton.addEventListener("click", () => {
+    // Show voice button and hide text input
+    if (textInputArea) {
+      textInputArea.style.display = "none";
+    }
+    if (recordButton) {
+      recordButton.style.display = "flex";
+    }
+  });
+}
+
+// Clear chat functionality
+if (clearChatBtn) {
+  clearChatBtn.addEventListener("click", () => {
+    if (chatMessages) {
+      chatMessages.innerHTML = `
+        <div class="chat-message bot-message">
+          <div class="message-content">
+            Chat history cleared. How can I help you today?
+          </div>
+          <div class="message-time">Just now</div>
+        </div>
+      `;
+    }
+  });
+}
+
+if (languageSelect) {
+  languageSelect.addEventListener("change", (event) => {
+    const selectedLanguage = (event.target as HTMLSelectElement).value;
+    console.log("Language changed to:", selectedLanguage);
+    // Update avatar language if needed
+    // This would require reinitializing the avatar with new language
+  });
+}
+
+// Update subtitle when avatar speaks
+function updateSubtitle(text: string) {
+  if (avatarSubtitle) {
+    avatarSubtitle.textContent = text;
+  }
+}
+
+// Add message to chat history
+function addChatMessage(message: string, isUser: boolean = false) {
+  if (chatMessages) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${isUser ? 'user-message' : 'bot-message'}`;
+    
+    const now = new Date();
+    const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    messageDiv.innerHTML = `
+      <div class="message-content">${message}</div>
+      <div class="message-time">${timeString}</div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+}
