@@ -166,41 +166,86 @@ async function initializeAvatarSession() {
     avatar.on(StreamingEvents.STREAM_DISCONNECTED, handleStreamDisconnected);
     avatar.on(StreamingEvents.AVATAR_START_TALKING, (data) => {
       console.log("▶️ Avatar started talking", data);
-      // Update progress text while avatar is speaking
-      if (progressText) {
-        progressText.textContent = "Avatar is speaking...";
+      // Show speaking indicator instead of progress overlay
+      const speakingIndicator = document.getElementById('avatarSpeakingIndicator');
+      if (speakingIndicator) {
+        speakingIndicator.style.display = "flex";
       }
-      // Show progress overlay
+      // Hide progress overlay during speaking
       if (progressSection) {
-        progressSection.style.display = "block";
+        progressSection.style.display = "none";
+      }
+      // Hide subtitle text when avatar is speaking
+      if (avatarSubtitle) {
+        avatarSubtitle.style.display = "none";
+      }
+      // Ensure avatar interface stays visible
+      if (avatarInterface) {
+        avatarInterface.style.display = "flex";
+      }
+      // Disable all input during speaking to prevent interruptions
+      if (speakButton) {
+        speakButton.disabled = true;
+      }
+      if (recordButton) {
+        recordButton.disabled = true;
+      }
+      if (userInput) {
+        userInput.disabled = true;
       }
     });
 
     avatar.on(StreamingEvents.AVATAR_STOP_TALKING, (data) => {
       console.log("⏹️ Avatar stopped talking", data);
+      // Hide speaking indicator
+      const speakingIndicator = document.getElementById('avatarSpeakingIndicator');
+      if (speakingIndicator) {
+        speakingIndicator.style.display = "none";
+      }
+      // Show subtitle text again when avatar stops speaking
+      if (avatarSubtitle) {
+        avatarSubtitle.style.display = "block";
+      }
       // Hide progress overlay
       if (progressSection) {
         progressSection.style.display = "none";
       }
-      // Re-enable controls
+      // Re-enable all controls after speaking is complete
       if (speakButton) {
         speakButton.disabled = false;
+        speakButton.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+          </svg>
+        `;
       }
       if (recordButton) {
         recordButton.disabled = false;
       }
+      if (userInput) {
+        ensureInputEnabled();
+        userInput.focus();
+        console.log("Input re-enabled after avatar stopped talking");
+      }
+      // Ensure avatar interface stays visible
+      if (avatarInterface) {
+        avatarInterface.style.display = "flex";
+      }
     });
     
-    // Use default Wayne avatar
-    console.log("🚀 Using default Wayne avatar for immediate functionality");
+    // Use your custom avatar with specific voice
+    console.log("🚀 Using your custom avatar with voice configuration");
     
     sessionData = await avatar.createStartAvatar({
       quality: AvatarQuality.High,
-      avatarName: "Wayne_20240711",
+      avatarName: "66008d91cfee459689ab288e56eb773f",
       language: "English",
+      voice: {
+        voiceId: "caf3267cce8e4807b190cc45d4a46dcc"
+      }
     });
     
-    console.log("✅ Default Wayne avatar is working!", sessionData);
+    console.log("✅ Your custom avatar with voice is working!", sessionData);
 
     console.log("Session data:", sessionData);
 
@@ -211,8 +256,29 @@ async function initializeAvatarSession() {
     
     // Update subtitle with welcome message
     if (avatarSubtitle) {
-      avatarSubtitle.textContent = "Hello, I am here to help you on your queries on insurance";
+      avatarSubtitle.textContent = "Hi, how can I assist you?";
     }
+    
+    // Make avatar speak the introduction message
+    setTimeout(async () => {
+      if (avatar) {
+        try {
+          await avatar.speak({
+            text: "Hi, how can I assist you?",
+            task_type: TaskType.TALK,
+            taskMode: TaskMode.SYNC
+          });
+          console.log("✅ Avatar spoke introduction message");
+        } catch (error) {
+          console.error("❌ Failed to speak introduction:", error);
+        }
+      }
+    }, 2000);
+    
+    // Ensure input is properly enabled
+    setTimeout(() => {
+      ensureInputEnabled();
+    }, 500);
 
   } catch (error) {
     console.error("Failed to initialize avatar session:", error);
@@ -255,8 +321,18 @@ async function handleSpeak() {
       progressText.textContent = "Processing...";
     }
     
-    const userMessage = userInput.value;
-    userInput.value = ""; // Clear input immediately
+    const userMessage = userInput.value.trim();
+    if (userMessage === "") {
+      console.log("No input text");
+      return;
+    }
+    
+    // Show user what they typed in the input field
+    console.log("User typed:", userMessage);
+    
+    // Add visual feedback that text is being processed
+    userInput.style.borderColor = "#8b5cf6";
+    userInput.style.boxShadow = "0 0 0 2px rgba(139, 92, 246, 0.3)";
     
     
     try {
@@ -272,6 +348,11 @@ async function handleSpeak() {
       // Add user message to chat
       addChatMessage(userMessage, true);
       
+      // Clear input after successful processing and reset styling
+      userInput.value = "";
+      userInput.style.borderColor = "rgba(255, 255, 255, 0.2)";
+      userInput.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+      
       // Update subtitle with the response
       updateSubtitle(output);
       
@@ -280,14 +361,30 @@ async function handleSpeak() {
       
       // Keep text input area visible for continuous typing
       // Don't hide text input area - let user continue typing
+      if (textInputArea) {
+        textInputArea.style.display = "flex";
+      }
+      // Re-focus the input for continuous typing
+      setTimeout(() => {
+        if (userInput) {
+          userInput.focus();
+        }
+      }, 100);
       
       // First, let the avatar acknowledge the user input
-      if (avatar ) {
-        await avatar.speak({
-          text: output,
-          task_type: TaskType.TALK,
-          taskMode: TaskMode.SYNC
-        });
+      if (avatar) {
+        try {
+          await avatar.speak({
+            text: output,
+            task_type: TaskType.TALK,
+            taskMode: TaskMode.SYNC
+          });
+          console.log("✅ Avatar speaking completed successfully");
+        } catch (speakError) {
+          console.error("❌ Avatar speaking failed:", speakError);
+          // Add error message to chat
+          addChatMessage("Sorry, I had trouble speaking that response. Please try again.", false);
+        }
       }
 
       // Note: Button will be re-enabled when AVATAR_STOP_TALKING event fires
@@ -310,15 +407,70 @@ async function handleSpeak() {
           </svg>
         `;
       }
+      
+      // Ensure we stay in avatar interface even on error
+      if (avatarInterface) {
+        avatarInterface.style.display = "flex";
+      }
+      if (welcomeScreen) {
+        welcomeScreen.style.display = "none";
+      }
+      // Re-enable input after error
+      if (userInput) {
+        userInput.disabled = false;
+        userInput.style.borderColor = "rgba(255, 255, 255, 0.2)";
+        userInput.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+      }
     }
   }
 
 // Handle when avatar stream is ready
 function handleStreamReady(event: any) {
   if (event.detail && videoElement) {
+    console.log("🎥 Stream ready, setting video source");
     videoElement.srcObject = event.detail;
+    
+    // Ensure video plays smoothly and doesn't blackout
+    videoElement.addEventListener('loadstart', () => {
+      console.log("📹 Video loading started");
+    });
+    
+    videoElement.addEventListener('canplay', () => {
+      console.log("📹 Video can play");
+    });
+    
+    videoElement.addEventListener('error', (e) => {
+      console.error("📹 Video error:", e);
+    });
+    
+    // Add event listener for when video is about to play
+    videoElement.addEventListener('play', () => {
+      console.log("📹 Video started playing");
+    });
+    
+    // Add event listener for when video pauses
+    videoElement.addEventListener('pause', () => {
+      console.log("📹 Video paused");
+    });
+    
+    // Add event listener for when video ends
+    videoElement.addEventListener('ended', () => {
+      console.log("📹 Video ended");
+    });
+    
     videoElement.onloadedmetadata = () => {
-      videoElement.play().catch(console.error);
+      videoElement.play().then(() => {
+        console.log("✅ Video playing successfully");
+        // Keep video playing continuously
+        videoElement.loop = false;
+        videoElement.muted = false;
+      }).catch((error) => {
+        console.error("❌ Video play failed:", error);
+        // Retry playing after a short delay
+        setTimeout(() => {
+          videoElement.play().catch(console.error);
+        }, 1000);
+      });
     };
   } else {
     console.error("Stream is not available");
@@ -329,7 +481,15 @@ function handleStreamReady(event: any) {
 function handleStreamDisconnected() {
   console.log("Stream disconnected");
   if (videoElement) {
-    videoElement.srcObject = null;
+    // Don't immediately clear the video - keep it playing if possible
+    console.log("Stream disconnected but keeping video for stability");
+    // Only clear if it's a real disconnection
+    setTimeout(() => {
+      if (videoElement && !videoElement.srcObject) {
+        console.log("Clearing video after timeout");
+        videoElement.srcObject = null;
+      }
+    }, 5000);
   }
 
   // Only return to welcome screen if it's an actual disconnection
@@ -385,6 +545,27 @@ endButton.addEventListener("click", terminateAvatarSession);
 speakButton.addEventListener("click", handleSpeak);
 recordButton.addEventListener("click", toggleRecording);
 
+// Add input event listener to show text as user types
+userInput.addEventListener("input", (event) => {
+  console.log("User typing:", userInput.value);
+  // Ensure the input is visible and working
+  userInput.style.opacity = "1";
+  userInput.style.color = "white";
+});
+
+// Add focus event listener
+userInput.addEventListener("focus", (event) => {
+  console.log("Input focused");
+  userInput.style.opacity = "1";
+  userInput.style.color = "white";
+  userInput.disabled = false;
+});
+
+// Add blur event listener
+userInput.addEventListener("blur", (event) => {
+  console.log("Input blurred");
+});
+
 // Add Enter key listener for input field
 userInput.addEventListener("keypress", (event) => {
   if (event.key === "Enter") {
@@ -418,9 +599,13 @@ if (textInputBtn) {
       if (recordButton) {
         recordButton.style.display = "none";
       }
+      // Ensure input is focused and ready
       setTimeout(() => {
         if (userInput) {
+          ensureInputEnabled();
           userInput.focus();
+          userInput.placeholder = "Type your message here...";
+          console.log("Input enabled and focused");
         }
       }, 100);
     }
@@ -488,5 +673,17 @@ function addChatMessage(message: string, isUser: boolean = false) {
     
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+}
+
+// Ensure input is properly enabled and visible
+function ensureInputEnabled() {
+  if (userInput) {
+    userInput.disabled = false;
+    userInput.style.opacity = "1";
+    userInput.style.color = "white";
+    userInput.style.background = "rgba(255, 255, 255, 0.15)";
+    userInput.style.border = "2px solid rgba(255, 255, 255, 0.2)";
+    console.log("Input ensured to be enabled and visible");
   }
 }
