@@ -1,7 +1,11 @@
 import OpenAI from "openai";
- 
+
+/**
+ * OpenAIAssistant class for handling OpenAI API interactions
+ * Note: Currently not used in the main application but kept for future features
+ */
 export class OpenAIAssistant {
-  private client: OpenAI;
+  private readonly client: OpenAI;
   private assistant: any;
   private thread: any;
  
@@ -13,6 +17,10 @@ export class OpenAIAssistant {
     });
   }
  
+  /**
+   * Initializes the OpenAI assistant and thread
+   * @param instructions - Custom instructions for the assistant
+   */
   async initialize(
     instructions: string = `You are an English tutor. Help students improve their language skills by:
     - Correcting mistakes in grammar and vocabulary
@@ -20,7 +28,7 @@ export class OpenAIAssistant {
     - Engaging in conversation practice 
     - Providing learning suggestions
     Be friendly, adapt to student's level, and always give concise answers.`
-  ) {
+  ): Promise<void> {
     // Create an assistant
     this.assistant = await this.client.beta.assistants.create({
       name: "English Tutor Assistant",
@@ -33,6 +41,11 @@ export class OpenAIAssistant {
     this.thread = await this.client.beta.threads.create();
   }
  
+  /**
+   * Gets a response from the OpenAI assistant
+   * @param userMessage - The user's message
+   * @returns Promise<string> - The assistant's response
+   */
   async getResponse(userMessage: string): Promise<string> {
     if (!this.assistant || !this.thread) {
       throw new Error("Assistant not initialized. Call initialize() first.");
@@ -69,7 +82,12 @@ export class OpenAIAssistant {
     return "Sorry, I couldn't process your request.";
   }
 
-  // New streaming method for better HeyGen avatar integration
+  /**
+   * Gets a streaming response from the OpenAI assistant
+   * @param userMessage - The user's message
+   * @param _onChunk - Callback for streaming chunks (currently unused)
+   * @param onComplete - Callback for the complete response
+   */
   async getStreamingResponse(
     userMessage: string,
     _onChunk: (chunk: string) => void,
@@ -115,12 +133,17 @@ export class OpenAIAssistant {
         onComplete("Sorry, I couldn't process your request.");
       }
     } catch (error) {
-      console.error("Error in streaming response:", error);
+      // Error in streaming response - handled by callback
       onComplete("Sorry, I encountered an error processing your request.");
     }
   }
 
-  // Alternative method using direct chat completions for better streaming
+  /**
+   * Alternative method using direct chat completions for better streaming
+   * @param userMessage - The user's message
+   * @param onChunk - Callback for streaming chunks
+   * @param onComplete - Callback for the complete response
+   */
   async getStreamingChatResponse(
     userMessage: string,
     onChunk: (chunk: string) => void,
@@ -159,7 +182,7 @@ export class OpenAIAssistant {
       
       onComplete(fullResponse);
     } catch (error) {
-      console.error("Error in streaming chat response:", error);
+      // Error in streaming chat response - handled by callback
       onComplete("Sorry, I encountered an error processing your request.");
     }
   }

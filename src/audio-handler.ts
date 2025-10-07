@@ -1,10 +1,12 @@
+/**
+ * VoiceRecorder class handles audio recording and transcription
+ */
 export class VoiceRecorder {
     private mediaRecorder: MediaRecorder | null = null;
     private audioChunks: Blob[] = [];
     private isRecording = false;
-
-    private onStatusChange: (status: string) => void;
-    private onTranscriptionComplete: (text: string) => void;
+    private readonly onStatusChange: (status: string) => void;
+    private readonly onTranscriptionComplete: (text: string) => void;
 
     constructor(
         onStatusChange: (status: string) => void,
@@ -14,9 +16,21 @@ export class VoiceRecorder {
         this.onTranscriptionComplete = onTranscriptionComplete;
     }
 
-    async startRecording() {
+    /**
+     * Starts audio recording
+     */
+    async startRecording(): Promise<void> {
         try {
-            console.log('🎤 Requesting microphone access...');
+            // Check if getUserMedia is available
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('getUserMedia is not supported in this browser or environment');
+            }
+
+            // Check if we're on HTTPS (required for getUserMedia in production)
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                throw new Error('Microphone access requires HTTPS in production. Please use HTTPS or localhost.');
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
@@ -24,7 +38,6 @@ export class VoiceRecorder {
                     autoGainControl: true
                 } 
             });
-            console.log('✅ Microphone access granted');
             
             this.mediaRecorder = new MediaRecorder(stream, {
                 mimeType: 'audio/webm;codecs=opus'
@@ -40,9 +53,7 @@ export class VoiceRecorder {
             };
 
             this.mediaRecorder.onstop = async () => {
-                console.log('🔄 Recording stopped, processing...');
                 const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-                console.log('📦 Audio blob size:', audioBlob.size, 'bytes');
                 
                 if (audioBlob.size > 1000) { // At least 1KB
                     await this.sendToElevenLabs(audioBlob);
@@ -54,17 +65,18 @@ export class VoiceRecorder {
 
             this.mediaRecorder.start();
             this.onStatusChange('🎤 Recording... Speak now!');
-            console.log('🔴 Recording started');
             
         } catch (error) {
-            console.error('❌ Error starting recording:', error);
+            // Error starting recording - handled by status callback
             this.onStatusChange('❌ Error: ' + (error as Error).message);
         }
     }
 
-    stopRecording() {
+    /**
+     * Stops audio recording
+     */
+    stopRecording(): void {
         if (this.mediaRecorder && this.isRecording) {
-            console.log('⏹️ Stopping recording...');
             this.mediaRecorder.stop();
             this.isRecording = false;
             this.onStatusChange('🔄 Processing audio...');
@@ -75,10 +87,12 @@ export class VoiceRecorder {
         }
     }
 
-    private async sendToElevenLabs(audioBlob: Blob) {
+    /**
+     * Sends audio blob to ElevenLabs for transcription
+     * @param audioBlob - The recorded audio blob
+     */
+    private async sendToElevenLabs(audioBlob: Blob): Promise<void> {
         try {
-            console.log('Sending audio to ElevenLabs STT API...');
-            
             const formData = new FormData();
             formData.append('file', audioBlob, 'audio.wav');
             formData.append("model_id", "scribe_v1");
@@ -97,20 +111,16 @@ export class VoiceRecorder {
             }
 
             const data = await response.json();
-            console.log('Received transcription:', data);
-            
             const transcribedText = data.text || '';
             
-            if (transcribedText && transcribedText.trim().length > 0) {
-                console.log('✅ Transcription received:', transcribedText);
+            if (transcribedText.trim().length > 0) {
                 this.onStatusChange('✅ Getting AI response...');
                 this.onTranscriptionComplete(transcribedText);
             } else {
-                console.log('⚠️ Empty transcription');
                 this.onStatusChange('');
             }
         } catch (error) {
-            console.error('❌ Error transcribing audio:', error);
+            // Error transcribing audio - handled by status callback
             this.onStatusChange('❌ Error: Failed to transcribe audio');
             setTimeout(() => {
                 this.onStatusChange('');
@@ -118,7 +128,37 @@ export class VoiceRecorder {
         }
     }
 
+    /**
+     * Returns whether the recorder is currently recording
+     * @returns boolean - True if recording, false otherwise
+     */
     isCurrentlyRecording(): boolean {
         return this.isRecording;
+    }
+
+    /**
+     * Checks if microphone access is available
+     * @returns Promise<boolean> - True if microphone access is available
+     */
+    static async isMicrophoneAvailable(): Promise<boolean> {
+        try {
+            // Check if getUserMedia is available
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                return false;
+            }
+
+            // Check if we're on HTTPS (required for getUserMedia in production)
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                return false;
+            }
+
+            // Try to get microphone permissions
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // Stop the stream immediately as we just wanted to check permissions
+            stream.getTracks().forEach(track => track.stop());
+            return true;
+        } catch (error) {
+            return false;
+        }
     }
 }
