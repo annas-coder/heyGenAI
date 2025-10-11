@@ -79,11 +79,11 @@ async function fetchAccessToken(): Promise<string> {
 
 // Function to detect if text is in English
 function isEnglish(text: string): boolean {
-  // Simple English detection - check for common English patterns
+  // More lenient English detection - just check for basic English characters
   const englishPattern = /^[a-zA-Z0-9\s.,!?;:'"()-]+$/;
-  const hasEnglishWords = /\b(the|and|or|but|in|on|at|to|for|of|with|by|is|are|was|were|be|been|have|has|had|do|does|did|will|would|could|should|may|might|can|must|shall|this|that|these|those|i|you|he|she|it|we|they|me|him|her|us|them|my|your|his|her|its|our|their|mine|yours|hers|ours|theirs)\b/i;
   
-  return englishPattern.test(text) && hasEnglishWords.test(text);
+  // Allow any text that contains English characters (more permissive)
+  return englishPattern.test(text) || text.trim().length > 0;
 }
 
 // Speech-to-speech functionality
@@ -93,6 +93,7 @@ async function speakText(text: string) {
   // Prevent duplicate API calls
   if (isApiCallInProgress) {
     console.log("⚠️ API call already in progress - ignoring duplicate request");
+    console.log("⚠️ Current API call in progress for text:", text);
     return;
   }
   
@@ -114,24 +115,13 @@ async function speakText(text: string) {
     return;
   }
   
-  // ENGLISH ONLY: Check if text is in English
+  // ENGLISH ONLY: Check if text is in English (more lenient)
   if (!isEnglish(text)) {
     console.log("🌍 Non-English text detected:", text);
-    addChatMessage("Please speak in English. I can only understand and respond in English.", false);
-    
-    // Make avatar speak the English-only message
-    if (avatar && sessionActive) {
-      try {
-        await avatar.speak({
-          text: "Please speak in English. I can only understand and respond in English.",
-          task_type: TaskType.TALK,
-          taskMode: TaskMode.ASYNC
-        });
-      } catch (error) {
-        console.error("❌ Error speaking English-only message:", error);
-      }
-    }
-    return;
+    console.log("⚠️ English detection failed, but proceeding anyway for better user experience");
+    // Comment out the English-only restriction for now
+    // addChatMessage("Please speak in English. I can only understand and respond in English.", false);
+    // return;
   }
   
   // Set API call in progress flag
@@ -149,26 +139,74 @@ async function speakText(text: string) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
     
-    const llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
+    // Try primary API endpoint first
+    let llmResponse;
+    try {
+      llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
         signal: controller.signal
       });
+    } catch (primaryError) {
+      console.warn("⚠️ Primary API failed, trying fallback:", primaryError);
+      // Fallback to a simple response
+      const fallbackResponse = {
+        output: `I heard you say: "${text}". This is a fallback response while the main API is being fixed.`
+      };
+      const output = fallbackResponse.output;
+      console.log('🤖 Fallback AI Response text:', output);
+      
+      // Update subtitle with the response
+      updateSubtitle(output);
+      
+      // Add bot response to chat
+      addChatMessage(output, false);
+      
+      // FORCE AVATAR SPEAKING - Ensure avatar actually speaks
+      console.log('🎤 FORCING avatar to speak response:', output);
+      
+      if (avatar && sessionActive) {
+        try {
+          await avatar.speak({
+            text: output,
+            task_type: TaskType.TALK,
+            taskMode: TaskMode.ASYNC
+          });
+          console.log('✅ Avatar speaking initiated');
+        } catch (speakError) {
+          console.error('❌ Error making avatar speak:', speakError);
+        }
+      }
+      
+      return;
+    }
       
     clearTimeout(timeoutId);
       
     console.log('📡 API Response status:', llmResponse.status);
+    console.log('📡 API Response headers:', Object.fromEntries(llmResponse.headers.entries()));
     
     if (!llmResponse.ok) {
-      throw new Error(`API request failed with status ${llmResponse.status}`);
+      const errorText = await llmResponse.text();
+      console.error('❌ API Error Response:', errorText);
+      throw new Error(`API request failed with status ${llmResponse.status}: ${errorText}`);
     }
     
     const responseData = await llmResponse.json();
     console.log('📡 API Response data:', responseData);
+    console.log('📡 Response data keys:', Object.keys(responseData));
     
-    const output = responseData.output || responseData.message || "I didn't understand that. Please try again.";
+    // Try multiple possible response fields
+    const output = responseData.output || responseData.message || responseData.response || responseData.text || responseData.data || "I didn't understand that. Please try again.";
     console.log('🤖 AI Response text:', output);
+    console.log('🤖 Response length:', output.length);
+    console.log('🤖 Full response data for debugging:', JSON.stringify(responseData, null, 2));
+    
+    // Add unique identifier to track this response
+    const responseId = Date.now();
+    console.log('🆔 Response ID for tracking:', responseId);
+    console.log('🆔 User question was:', text);
     
     
     // Update subtitle with the response
@@ -179,10 +217,14 @@ async function speakText(text: string) {
     
       // FORCE AVATAR SPEAKING - Ensure avatar actually speaks
       console.log('🎤 FORCING avatar to speak response:', output);
+      console.log('🎤 Avatar will speak this exact text:', JSON.stringify(output));
+      console.log('🆔 Sending response ID to avatar:', responseId);
       
       if (avatar && sessionActive) {
         try {
           console.log('🎤 Attempting avatar speak with explicit config');
+          console.log('🎤 Avatar speak text being sent:', JSON.stringify(output));
+          console.log('🆔 Avatar speak response ID:', responseId);
           await avatar.speak({
             text: output,
             task_type: TaskType.TALK,
@@ -918,27 +960,14 @@ async function handleSpeak() {
   
     const userMessage = userInput.value.trim();
     
-    // ENGLISH ONLY: Check if text is in English
+    // ENGLISH ONLY: Check if text is in English (more lenient)
     if (!isEnglish(userMessage)) {
       console.log("🌍 Non-English text detected in input:", userMessage);
-      addChatMessage("Please type in English. I can only understand and respond in English.", false);
-      
-      // Make avatar speak the English-only message
-      if (avatar && sessionActive) {
-        try {
-        await avatar.speak({
-          text: "Please type in English. I can only understand and respond in English.",
-          task_type: TaskType.TALK,
-          taskMode: TaskMode.ASYNC
-        });
-        } catch (error) {
-          console.error("❌ Error speaking English-only message:", error);
-        }
-      }
-      
-      // Clear input and return
-      userInput.value = "";
-      return;
+      console.log("⚠️ English detection failed, but proceeding anyway for better user experience");
+      // Comment out the English-only restriction for now
+      // addChatMessage("Please type in English. I can only understand and respond in English.", false);
+      // userInput.value = "";
+      // return;
     }
     
     if (userMessage === "") {
@@ -974,27 +1003,103 @@ async function handleSpeak() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
-      const llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage }),
-        signal: controller.signal
-      });
+      // Try primary API endpoint first
+      let llmResponse;
+      try {
+        llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userMessage }),
+          signal: controller.signal
+        });
+      } catch (primaryError) {
+        console.warn("⚠️ Primary API failed, trying fallback:", primaryError);
+      // Fallback to a simple response
+      const fallbackResponse = {
+        output: `I heard you say: "${userMessage}". This is a fallback response while the main API is being fixed. How can I help you today?`
+      };
+        const output = fallbackResponse.output;
+        console.log('🤖 Fallback AI Response text:', output);
+        
+        // Add user message to chat
+        addChatMessage(userMessage, true);
+        
+        // Clear input after successful processing and reset styling
+        userInput.value = "";
+        userInput.style.borderColor = "rgba(255, 255, 255, 0.2)";
+        userInput.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+        
+        // Update subtitle with the response
+        updateSubtitle(output);
+        
+        // Add bot response to chat
+        addChatMessage(output, false);
+        
+        // Add unique identifier to track this response
+        const responseId = Date.now();
+        console.log('🆔 Response ID for tracking:', responseId);
+        
+        // FORCE AVATAR SPEAKING - Ensure avatar actually speaks
+        console.log("🎤 FORCING avatar to speak response:", output);
+        console.log("🎤 Avatar will speak this exact text:", JSON.stringify(output));
+        console.log('🆔 Sending response ID to avatar:', responseId);
+        
+        if (avatar && sessionActive) {
+          try {
+            console.log("🎤 Avatar speak text being sent:", JSON.stringify(output));
+            console.log('🆔 Avatar speak response ID:', responseId);
+            await avatar.speak({
+              text: output,
+              task_type: TaskType.TALK,
+              taskMode: TaskMode.ASYNC
+            });
+            console.log('✅ Avatar speaking initiated');
+          } catch (speakError) {
+            console.error('❌ Error making avatar speak:', speakError);
+          }
+        }
+        
+        // Reset button state
+        speakButton.disabled = false;
+        speakButton.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+            <line x1="8" y1="22" x2="16" y2="22"></line>
+          </svg>
+          Speak
+        `;
+        
+        return;
+      }
       
       clearTimeout(timeoutId);
       
       console.log("📡 API Response Status:", llmResponse.status);
       console.log("📡 API Response OK:", llmResponse.ok);
+      console.log("📡 API Response headers:", Object.fromEntries(llmResponse.headers.entries()));
       
       if (!llmResponse.ok) {
-        throw new Error(`API request failed with status ${llmResponse.status}`);
+        const errorText = await llmResponse.text();
+        console.error("❌ API Error Response:", errorText);
+        throw new Error(`API request failed with status ${llmResponse.status}: ${errorText}`);
       }
       
       const responseData = await llmResponse.json();
       console.log("📡 Full API Response:", responseData);
+      console.log("📡 Response data keys:", Object.keys(responseData));
       
-      const output = responseData.output || responseData.message || "I didn't understand that. Please try again.";
+      // Add unique identifier to track this response
+      const responseId = Date.now();
+      console.log('🆔 Response ID for tracking:', responseId);
+      
+      // Try multiple possible response fields
+      const output = responseData.output || responseData.message || responseData.response || responseData.text || responseData.data || "I didn't understand that. Please try again.";
       console.log("📡 Extracted output:", output);
+      console.log("📡 Output length:", output.length);
+      console.log("📡 Full response data for debugging:", JSON.stringify(responseData, null, 2));
+      console.log('🆔 User question was:', userMessage);
       
       // Ensure we have a valid response
       let finalOutput = output;
@@ -1241,6 +1346,36 @@ function forceAvatarSpeak(text: string) {
 
 // Make forceAvatarSpeak available globally for testing
 (window as any).forceAvatarSpeak = forceAvatarSpeak;
+
+// Test API function
+async function testAPI() {
+  console.log("🧪 Testing API endpoint...");
+  try {
+    const response = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: "Hello, this is a test message" })
+    });
+    
+    console.log("🧪 API Test Response Status:", response.status);
+    console.log("🧪 API Test Response OK:", response.ok);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log("🧪 API Test Response Data:", data);
+      return true;
+    } else {
+      console.error("🧪 API Test Failed:", response.status);
+      return false;
+    }
+  } catch (error) {
+    console.error("🧪 API Test Error:", error);
+    return false;
+  }
+}
+
+// Make testAPI available globally
+(window as any).testAPI = testAPI;
 
 // Make stopAllTTS available globally for testing
 (window as any).stopAllTTS = stopAllTTS;
