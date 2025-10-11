@@ -2,7 +2,10 @@
 <html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="icon" href="./src/assests/Images/favicon.png" type="image/svg+xml" />
     <link
       rel="stylesheet"
@@ -975,6 +978,16 @@
         background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
         color: white;
         box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
+        /* Mobile-specific improvements */
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        /* Ensure minimum touch target size */
+        min-width: 44px;
+        min-height: 44px;
       }
 
       .voice-btn:hover {
@@ -987,6 +1000,20 @@
         background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
         animation: pulse 1.5s ease-in-out infinite;
         box-shadow: 0 4px 20px rgba(239, 68, 68, 0.6);
+      }
+
+      /* Mobile touch feedback */
+      .voice-btn:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+      }
+
+      /* Mobile-specific recording state */
+      @media (max-width: 768px) {
+        .voice-btn.recording {
+          transform: scale(1.1);
+          box-shadow: 0 6px 25px rgba(239, 68, 68, 0.8);
+        }
       }
 
       .text-btn {
@@ -1091,105 +1118,47 @@
          transform: scale(1.02);
        }
 
-      .progress-indicator {
-        position: absolute;
-        bottom: 120px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(0, 0, 0, 0.7);
-        padding: 0.75rem 1.5rem;
-        border-radius: 25px;
-        backdrop-filter: blur(10px);
-        z-index: 1002;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .progress-content {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 0.75rem;
-        color: white;
-        font-size: 0.9rem;
-      }
-
-      .progress-spinner {
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-top: 2px solid #8b5cf6;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
 
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
 
-       .avatar-speaking-indicator {
-         position: absolute;
-         bottom: 80px;
-         left: 50%;
-         transform: translateX(-50%);
-         background: rgba(139, 92, 246, 0.9);
-         padding: 0.5rem 1rem;
-         border-radius: 20px;
-         backdrop-filter: blur(10px);
-         z-index: 1001;
-         display: flex;
-         align-items: center;
-         gap: 0.5rem;
-         color: white;
-         font-size: 0.85rem;
-         border: 1px solid rgba(255, 255, 255, 0.2);
-         animation: pulse 2s ease-in-out infinite;
-       }
-
-       .recording-status-avatar {
-         position: absolute;
-         bottom: 80px;
-         left: 50%;
-         transform: translateX(-50%);
-         background: rgba(239, 68, 68, 0.9);
-         padding: 0.75rem 1.5rem;
-         border-radius: 25px;
-         backdrop-filter: blur(15px);
-         z-index: 1001;
-         display: flex;
-         align-items: center;
-         gap: 0.75rem;
-         color: white;
-         font-size: 0.9rem;
-         font-weight: 600;
-         border: 1px solid rgba(255, 255, 255, 0.3);
-         box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
-         animation: recordingPulse 1.5s ease-in-out infinite;
-       }
-
-       @keyframes recordingPulse {
-         0%, 100% { 
-            transform: translateX(-50%) scale(1);
-            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
-          }
-         50% { 
-            transform: translateX(-50%) scale(1.05);
-            box-shadow: 0 6px 25px rgba(239, 68, 68, 0.6);
-          }
-       }
-
-      .speaking-dot {
-        width: 8px;
-        height: 8px;
-        background: #10b981;
-        border-radius: 50%;
-        animation: speakingPulse 1.5s ease-in-out infinite;
+      .recording-status-avatar {
+        position: absolute;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(239, 68, 68, 0.9);
+        padding: 0.75rem 1.5rem;
+        border-radius: 25px;
+        backdrop-filter: blur(15px);
+        z-index: 1001;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: white;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        animation: recordingPulse 1.5s ease-in-out infinite;
       }
 
-      @keyframes speakingPulse {
-        0%, 100% { opacity: 0.4; transform: scale(1); }
-        50% { opacity: 1; transform: scale(1.2); }
+      @keyframes recordingPulse {
+        0%, 100% { 
+          transform: translateX(-50%) scale(1);
+          box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        }
+        50% { 
+          transform: translateX(-50%) scale(1.05);
+          box-shadow: 0 6px 25px rgba(239, 68, 68, 0.6);
+        }
       }
+
+
+
+
 
       /* Responsive Design */
       @media (max-width: 1024px) {
@@ -1344,23 +1313,10 @@
         </button>
       </div>
 
-      <!-- Progress indicator -->
-      <div id="progressSection" class="progress-indicator" style="display: none;">
-        <div class="progress-content">
-          <div class="progress-spinner"></div>
-          <span id="progressText">Processing...</span>
-        </div>
-      </div>
-      
-       <!-- Avatar speaking indicator -->
-       <div id="avatarSpeakingIndicator" class="avatar-speaking-indicator" style="display: none;">
-         <div class="speaking-dot"></div>
-         <span>Avatar is speaking...</span>
-       </div>
-       
-       <!-- Recording status indicator - positioned near avatar -->
-       <div id="recordingStatus" class="recording-status-avatar" style="display: none;"></div>
      </main>
+
+     <!-- Recording status indicator - positioned near avatar -->
+     <div id="recordingStatus" class="recording-status-avatar" style="display: none;"></div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

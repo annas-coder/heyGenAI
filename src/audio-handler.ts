@@ -19,22 +19,47 @@ export class VoiceRecorder {
             console.log('🎤 Requesting microphone access...');
             this.onStatusChange('🎤 Requesting microphone access...');
             
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true,
+            // Mobile-specific audio constraints
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const audioConstraints: MediaTrackConstraints = {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true,
+                // Mobile-specific optimizations
+                ...(isMobile && {
+                    sampleRate: 16000, // Lower sample rate for mobile
+                    channelCount: 1,    // Mono for mobile
+                    latency: 0.1       // Lower latency for mobile
+                }),
+                // Desktop optimizations
+                ...(!isMobile && {
                     sampleRate: 44100
-                } 
+                })
+            };
+            
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: audioConstraints
             });
             console.log('✅ Microphone access granted');
             
-            // Check if MediaRecorder supports the preferred format
+            // Mobile-specific MIME type selection
             let mimeType = 'audio/webm;codecs=opus';
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-                mimeType = 'audio/webm';
-                if (!MediaRecorder.isTypeSupported(mimeType)) {
+            if (isMobile) {
+                // Prefer formats that work better on mobile
+                if (MediaRecorder.isTypeSupported('audio/mp4')) {
                     mimeType = 'audio/mp4';
+                } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                    mimeType = 'audio/webm';
+                } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+                    mimeType = 'audio/wav';
+                }
+            } else {
+                // Desktop fallback chain
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'audio/webm';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                        mimeType = 'audio/mp4';
+                    }
                 }
             }
             
@@ -54,7 +79,6 @@ export class VoiceRecorder {
 
             this.mediaRecorder.onstop = async () => {
                 console.log('🔄 Recording stopped, processing...');
-                this.onStatusChange('🔄 Processing audio...');
                 
                 const audioBlob = new Blob(this.audioChunks, { type: mimeType });
                 console.log('📦 Audio blob size:', audioBlob.size, 'bytes');
@@ -81,11 +105,33 @@ export class VoiceRecorder {
             const errorMessage = (error as Error).message;
             console.error('❌ Error details:', errorMessage);
             
-            // Check for specific microphone access errors
+            // Mobile-specific error handling
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
             if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
-                this.onStatusChange('❌ Microphone access denied. Please allow microphone access and try again.');
+                if (isMobile) {
+                    this.onStatusChange('❌ Microphone access denied. Please allow microphone access in your browser settings and try again.');
+                } else {
+                    this.onStatusChange('❌ Microphone access denied. Please allow microphone access and try again.');
+                }
             } else if (errorMessage.includes('NotFoundError')) {
                 this.onStatusChange('❌ No microphone found. Please connect a microphone and try again.');
+            } else if (errorMessage.includes('NotSupportedError') || errorMessage.includes('NotReadableError')) {
+                if (isMobile) {
+                    this.onStatusChange('❌ Audio recording not supported on this device. Please try a different browser.');
+                } else {
+                    this.onStatusChange('❌ Audio recording not supported. Please try a different browser.');
+                }
+            } else if (errorMessage.includes('OverconstrainedError')) {
+                this.onStatusChange('❌ Audio constraints not supported. Trying with basic settings...');
+                // Try with basic constraints
+                try {
+                    await navigator.mediaDevices.getUserMedia({ audio: true });
+                    console.log('✅ Basic audio stream obtained');
+                    // Continue with basic stream...
+                } catch (basicError) {
+                    this.onStatusChange('❌ Unable to access microphone. Please check your device settings.');
+                }
             } else {
                 this.onStatusChange('❌ Error: ' + errorMessage);
             }
@@ -98,7 +144,6 @@ export class VoiceRecorder {
             console.log('⏹️ Stopping recording...');
             this.mediaRecorder.stop();
             this.isRecording = false;
-            this.onStatusChange('🔄 Processing audio...');
             
             // Stop all tracks in the stream
             const stream = this.mediaRecorder.stream;
@@ -109,16 +154,22 @@ export class VoiceRecorder {
     private async sendToElevenLabs(audioBlob: Blob) {
         try {
             console.log('Sending audio to ElevenLabs STT API...');
-            this.onStatusChange('🔄 Transcribing audio...');
             
             const formData = new FormData();
             
-            // Determine file extension based on blob type
+            // Determine file extension based on blob type and mobile compatibility
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             let fileName = 'audio.webm';
+            
             if (audioBlob.type.includes('mp4')) {
                 fileName = 'audio.mp4';
             } else if (audioBlob.type.includes('wav')) {
                 fileName = 'audio.wav';
+            } else if (audioBlob.type.includes('ogg')) {
+                fileName = 'audio.ogg';
+            } else if (isMobile && audioBlob.type.includes('webm')) {
+                // Mobile devices sometimes have issues with webm, try to convert
+                fileName = 'audio.webm';
             }
             
             formData.append('file', audioBlob, fileName);
@@ -156,7 +207,6 @@ export class VoiceRecorder {
             
             if (transcribedText && transcribedText.trim().length > 0) {
                 console.log('✅ Transcription received:', transcribedText);
-                this.onStatusChange('✅ Getting AI response...');
                 this.onTranscriptionComplete(transcribedText);
             } else {
                 console.log('⚠️ Empty transcription');
