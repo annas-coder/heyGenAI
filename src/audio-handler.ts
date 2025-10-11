@@ -78,8 +78,18 @@ export class VoiceRecorder {
             
         } catch (error) {
             console.error('❌ Error starting recording:', error);
-            this.onStatusChange('❌ Error: ' + (error as Error).message);
-            setTimeout(() => this.onStatusChange(''), 3000);
+            const errorMessage = (error as Error).message;
+            console.error('❌ Error details:', errorMessage);
+            
+            // Check for specific microphone access errors
+            if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
+                this.onStatusChange('❌ Microphone access denied. Please allow microphone access and try again.');
+            } else if (errorMessage.includes('NotFoundError')) {
+                this.onStatusChange('❌ No microphone found. Please connect a microphone and try again.');
+            } else {
+                this.onStatusChange('❌ Error: ' + errorMessage);
+            }
+            setTimeout(() => this.onStatusChange(''), 5000);
         }
     }
 
