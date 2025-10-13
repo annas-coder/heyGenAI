@@ -368,10 +368,15 @@
       .welcome-subtitle {
         font-size: 1.125rem;
         color: #64748b;
-        margin-bottom: 2rem;
         line-height: 1.6;
         text-shadow: none;
         font-weight: 400;
+        /* Constrain width and center as a small grid under the title */
+        max-width: 780px;
+        margin: 0.75rem auto 2rem; /* a bit below the title */
+        display: grid;
+        place-items: center;
+        text-align: center;
       }
 
       .feature-highlights {
@@ -901,7 +906,7 @@
       }
 
       #micBtn i {
-        color: #10b981;
+        color: #ef4444; /* red to stand out on the background */
       }
 
       #endSessionBtn i {
@@ -915,8 +920,8 @@
       }
 
       #micBtn:hover {
-        background: rgba(16, 185, 129, 0.3);
-        border-color: rgba(16, 185, 129, 0.5);
+        background: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.45);
       }
 
        .chat-sidebar {
@@ -1457,7 +1462,7 @@
     <div id="welcomeScreen" class="welcome-screen">
       <div class="welcome-content">
         <div class="welcome-icon">🤖</div>
-        <h1 class="welcome-title">Meet Your AI Assistant</h1>
+        <h1 class="welcome-title">Meet Your AI Twin</h1>
         <p class="welcome-subtitle">Experience the future of human-AI interaction with our advanced avatar technology. Speak naturally and get instant responses from our intelligent virtual assistant.</p>
         <div class="feature-highlights">
           <div class="feature-item">
