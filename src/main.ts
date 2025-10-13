@@ -200,7 +200,7 @@ function isEnglish(text: string): boolean {
     'believe', 'feel', 'see', 'hear', 'listen', 'watch', 'look', 'come', 'go', 'get', 'give',
     'take', 'make', 'work', 'play', 'live', 'eat', 'drink', 'sleep', 'wake', 'walk', 'run',
     'sit', 'stand', 'open', 'close', 'start', 'stop', 'begin', 'end', 'finish', 'about',
-    'tcit', 'dubai', 'company', 'assist', 'question', 'answer', 'information'
+    'tcit', 'dubai', 'twintik', 'technocit', 'company', 'assist', 'question', 'answer', 'information'
   ];
   
   // Check for basic English character pattern (Latin alphabet only)
@@ -317,12 +317,15 @@ async function speakText(text: string) {
     // Try primary API endpoint first
     let llmResponse;
     try {
+      console.log("📡 Making API call to:", 'https://technocit.app.n8n.cloud/webhook/chat');
+      console.log("📡 API call payload:", JSON.stringify({ message: text }));
       llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
         signal: controller.signal
       });
+      console.log("📡 API call completed, status:", llmResponse.status);
     } catch (primaryError) {
       console.warn("⚠️ Primary API failed, trying fallback:", primaryError);
       // Fallback to a simple response
@@ -1200,13 +1203,20 @@ async function initializeAvatarSession() {
 
 // Handle speaking event with streaming (HeyGen recommended approach)
 async function handleSpeak() {
-  console.log("handleSpeak called");
+  console.log("🎯 handleSpeak called");
+  console.log("🎯 User input value:", userInput.value);
+  console.log("🎯 User input element:", userInput);
+  console.log("🎯 Speak button disabled:", speakButton.disabled);
+  console.log("🎯 API call in progress:", isApiCallInProgress);
   
   // Prevent duplicate API calls
   if (isApiCallInProgress) {
     console.log("⚠️ API call already in progress - ignoring duplicate request");
+    console.log("⚠️ Current API call status:", isApiCallInProgress);
     return;
   }
+  
+  console.log("🚀 Starting new API call for text:", userInput.value);
   
   // Stop any existing avatar speaking that might be stuck
   if (avatar) {
@@ -1701,6 +1711,28 @@ async function testAPI() {
 
 // Make stopAllTTS available globally for testing
 (window as any).stopAllTTS = stopAllTTS;
+
+// Add simple test function for avatar
+async function testAvatar() {
+  console.log("🧪 Testing avatar...");
+  if (avatar && sessionActive) {
+    try {
+      await avatar.speak({
+        text: "Hello! I am working correctly. How can I help you today?",
+        task_type: TaskType.TALK,
+        taskMode: TaskMode.ASYNC
+      });
+      console.log("✅ Avatar test successful");
+    } catch (error) {
+      console.error("❌ Avatar test failed:", error);
+    }
+  } else {
+    console.log("❌ Avatar not ready or session not active");
+  }
+}
+
+// Make testAvatar available globally
+(window as any).testAvatar = testAvatar;
 
 
 // CRITICAL: Connection health monitoring to prevent disconnections

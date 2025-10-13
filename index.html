@@ -79,23 +79,17 @@
       }
 
       .video-container {
-        background: #ffffff;
-        border-radius: 20px;
-        padding: 2rem;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-        margin-bottom: 2.5rem;
+        background: transparent;
+        border-radius: 0;
+        padding: 0;
+        box-shadow: none;
+        margin: 0;
         position: relative;
         overflow: hidden;
       }
 
       .video-container::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #1e40af 0%, #3b82f6 50%, #1e40af 100%);
+        display: none;
       }
       
       .icon-btn {
@@ -1144,7 +1138,7 @@
 
       .chat-input-area .send-btn i {
         font-size: 14px;
-        color: currentColor;
+        color: white;
         transition: all 0.3s ease;
         line-height: 1;
         position: relative;
