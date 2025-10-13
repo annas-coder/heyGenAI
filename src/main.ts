@@ -20,6 +20,14 @@ const speakButton = document.getElementById("speakButton") as HTMLButtonElement;
 const recordButton = document.getElementById("recordButton") as HTMLButtonElement;
 const userInput = document.getElementById("userInput") as HTMLInputElement;
 const avatarSubtitle = document.getElementById("avatarSubtitle") as HTMLElement;
+
+// Test subtitle visibility
+console.log("🎬 Avatar subtitle element:", avatarSubtitle);
+console.log("🎬 Avatar subtitle exists:", !!avatarSubtitle);
+if (avatarSubtitle) {
+  console.log("🎬 Avatar subtitle current text:", avatarSubtitle.textContent);
+  console.log("🎬 Avatar subtitle current display:", avatarSubtitle.style.display);
+}
 const textInputArea = document.getElementById("textInputArea") as HTMLElement;
 const textInputBtn = document.getElementById("textInputBtn") as HTMLButtonElement;
 // Language selection removed - English only
@@ -31,6 +39,9 @@ const chatSidebar = document.querySelector(".chat-sidebar") as HTMLElement;
 const avatarMainContent = document.querySelector(".avatar-main-content") as HTMLElement;
 const waveformContainer = document.querySelector(".waveform-container") as HTMLElement;
 const recordingStatus = document.getElementById("recordingStatus") as HTMLElement;
+const chatBtn = document.getElementById("chatBtn") as HTMLButtonElement;
+const micBtn = document.getElementById("micBtn") as HTMLButtonElement;
+const endSessionBtn = document.getElementById("endSessionBtn") as HTMLButtonElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
@@ -42,11 +53,98 @@ let subtitleLocked = false;
 let lastStreamActivity = Date.now();
 let isInitializing = false;
 let isAvatarSpeaking = false; // Used to track avatar speaking state
+let currentSpeakingText = ""; // Track current text being spoken
+let subtitleUpdateInterval: NodeJS.Timeout | null = null; // For live subtitle updates
+let fullResponseText = ""; // Store the complete response text
+let currentWordIndex = 0; // Track current word being spoken
+let wordDisplayInterval: NodeJS.Timeout | null = null; // For word-by-word display
 // Dummy usage to satisfy TypeScript
 if (false) console.log(isAvatarSpeaking);
 let isApiCallInProgress = false; // Prevent duplicate API calls
 let lastTranscriptionText = ''; // Prevent duplicate transcription processing
 let isRecordingInProgress = false; // Prevent multiple recording operations
+
+// Function to show complete dialogue subtitle
+function showCompleteSubtitle(fullText: string) {
+  if (!avatarSubtitle) return;
+  
+  // Clear any existing interval
+  if (wordDisplayInterval) {
+    clearInterval(wordDisplayInterval);
+    wordDisplayInterval = null;
+  }
+  
+  // Show the complete text immediately
+  avatarSubtitle.textContent = fullText;
+  avatarSubtitle.style.color = "#ffffff";
+  avatarSubtitle.style.display = "block";
+  avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+  avatarSubtitle.style.padding = "10px 15px";
+  avatarSubtitle.style.borderRadius = "8px";
+  avatarSubtitle.style.position = "absolute";
+  avatarSubtitle.style.bottom = "80px";
+  avatarSubtitle.style.left = "50%";
+  avatarSubtitle.style.transform = "translateX(-50%)";
+  avatarSubtitle.style.zIndex = "1000";
+  avatarSubtitle.style.maxWidth = "80%";
+  avatarSubtitle.style.textAlign = "center";
+  avatarSubtitle.style.fontSize = "16px";
+  avatarSubtitle.style.lineHeight = "1.4";
+  
+  console.log("🎬 Complete subtitle shown:", fullText);
+}
+
+// Function to update subtitle with complete text
+function updateLiveSubtitle(text: string) {
+  console.log("🎬 updateLiveSubtitle called with:", text);
+  console.log("🎬 avatarSubtitle element:", avatarSubtitle);
+  console.log("🎬 avatarSubtitle exists:", !!avatarSubtitle);
+  if (avatarSubtitle && text) {
+    currentSpeakingText = text;
+    // Show complete text immediately
+    avatarSubtitle.textContent = text;
+    avatarSubtitle.style.color = "#ffffff";
+    avatarSubtitle.style.display = "block";
+    avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+    avatarSubtitle.style.padding = "10px 15px";
+    avatarSubtitle.style.borderRadius = "8px";
+    avatarSubtitle.style.position = "absolute";
+    avatarSubtitle.style.bottom = "80px";
+    avatarSubtitle.style.left = "50%";
+    avatarSubtitle.style.transform = "translateX(-50%)";
+    avatarSubtitle.style.zIndex = "1000";
+    avatarSubtitle.style.maxWidth = "80%";
+    avatarSubtitle.style.textAlign = "center";
+    avatarSubtitle.style.fontSize = "16px";
+    avatarSubtitle.style.lineHeight = "1.4";
+    console.log("🎬 Complete subtitle updated:", avatarSubtitle.textContent);
+  } else {
+    console.log("🎬 Subtitle not updated - avatarSubtitle:", !!avatarSubtitle, "text:", text);
+  }
+}
+
+// Function to clear subtitle when avatar stops speaking
+function clearLiveSubtitle() {
+  if (avatarSubtitle) {
+    // Keep subtitle visible for a few seconds so users can read the complete dialogue
+    setTimeout(() => {
+      if (avatarSubtitle) {
+        avatarSubtitle.textContent = "";
+        avatarSubtitle.style.display = "none";
+        currentSpeakingText = "";
+        fullResponseText = "";
+        currentWordIndex = 0;
+        
+        // Clear word display interval
+        if (wordDisplayInterval) {
+          clearInterval(wordDisplayInterval);
+          wordDisplayInterval = null;
+        }
+        console.log("🎬 Subtitle cleared after delay");
+      }
+    }, 5000); // Keep subtitle visible for 5 seconds
+  }
+}
 
 // Helper function to fetch access token
 async function fetchAccessToken(): Promise<string> {
@@ -77,18 +175,76 @@ async function fetchAccessToken(): Promise<string> {
   return data.token;
 }
 
-// Function to detect if text is in English
+// Function to detect if text is in English - Enhanced for better accuracy
 function isEnglish(text: string): boolean {
-  // More lenient English detection - just check for basic English characters
-  const englishPattern = /^[a-zA-Z0-9\s.,!?;:'"()-]+$/;
+  console.log("🔍 Checking if text is English:", text);
   
-  // Allow any text that contains English characters (more permissive)
-  return englishPattern.test(text) || text.trim().length > 0;
+  // Remove extra whitespace and normalize
+  const cleanText = text.trim().toLowerCase();
+  
+  if (!cleanText || cleanText.length === 0) {
+    console.log("❌ Empty text detected");
+    return false;
+  }
+  
+  // Enhanced English detection with comprehensive word list
+  const englishWords = [
+    'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+    'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did',
+    'will', 'would', 'could', 'should', 'may', 'might', 'can', 'hello', 'hi', 'yes', 'no',
+    'please', 'thank', 'you', 'me', 'my', 'your', 'his', 'her', 'our', 'their',
+    'this', 'that', 'these', 'those', 'what', 'when', 'where', 'why', 'how', 'who', 'which',
+    'help', 'need', 'want', 'like', 'love', 'good', 'bad', 'big', 'small', 'new', 'old',
+    'first', 'last', 'next', 'previous', 'here', 'there', 'now', 'then', 'today', 'tomorrow', 'yesterday',
+    'speak', 'talk', 'say', 'ask', 'tell', 'explain', 'describe', 'understand', 'know', 'think',
+    'believe', 'feel', 'see', 'hear', 'listen', 'watch', 'look', 'come', 'go', 'get', 'give',
+    'take', 'make', 'work', 'play', 'live', 'eat', 'drink', 'sleep', 'wake', 'walk', 'run',
+    'sit', 'stand', 'open', 'close', 'start', 'stop', 'begin', 'end', 'finish', 'about',
+    'tcit', 'dubai', 'company', 'assist', 'question', 'answer', 'information'
+  ];
+  
+  // Check for basic English character pattern (Latin alphabet only)
+  const englishPattern = /^[a-zA-Z\s.,!?;:'"()-]+$/;
+  
+  // Convert to lowercase and split into words
+  const words = cleanText.split(/\s+/);
+  
+  // Count English words
+  const englishWordCount = words.filter(word => englishWords.includes(word)).length;
+  const totalWords = words.length;
+  
+  // Check for English sentence patterns
+  const englishSentencePatterns = [
+    /^(hi|hello|hey)\s/i,
+    /^(what|where|when|why|how|who|which)\s/i,
+    /^(can|could|will|would|should|may|might|must)\s/i,
+    /^(tell|explain|describe|help|assist)\s/i,
+    /^(i|you|we|they)\s/i,
+    /^(the|a|an)\s/i,
+    /^(about|tcit|dubai|company)\s/i
+  ];
+  
+  const hasEnglishWords = englishWordCount > 0;
+  const matchesPattern = englishPattern.test(text);
+  const matchesSentencePattern = englishSentencePatterns.some(pattern => pattern.test(text));
+  
+  console.log("🔍 Has English words:", hasEnglishWords, `(${englishWordCount}/${totalWords})`);
+  console.log("🔍 Matches English pattern:", matchesPattern);
+  console.log("🔍 Matches sentence pattern:", matchesSentencePattern);
+  
+  // More strict: require English characters AND (English words OR sentence pattern)
+  const isEnglishText = matchesPattern && (hasEnglishWords || matchesSentencePattern) && text.trim().length > 0;
+  
+  console.log("🔍 Final English detection result:", isEnglishText);
+  return isEnglishText;
 }
 
 // Speech-to-speech functionality
 async function speakText(text: string) {
   console.log("🎤 speakText called with:", text);
+  
+  // Show complete dialogue subtitle
+  showCompleteSubtitle(text);
   
   // Prevent duplicate API calls
   if (isApiCallInProgress) {
@@ -115,13 +271,32 @@ async function speakText(text: string) {
     return;
   }
   
-  // ENGLISH ONLY: Check if text is in English (more lenient)
+  // ENGLISH ONLY: Check if text is in English (strict enforcement)
   if (!isEnglish(text)) {
     console.log("🌍 Non-English text detected:", text);
-    console.log("⚠️ English detection failed, but proceeding anyway for better user experience");
-    // Comment out the English-only restriction for now
-    // addChatMessage("Please speak in English. I can only understand and respond in English.", false);
-    // return;
+    console.log("⚠️ English detection failed - enforcing English only");
+    addChatMessage("Please speak in English. I can only understand and respond in English.", false);
+    
+    // Update subtitle to show English requirement
+    if (avatarSubtitle) {
+      avatarSubtitle.textContent = "Please speak in English only. I can only understand English.";
+      avatarSubtitle.style.color = "#ffa500";
+    }
+    
+    // Try to make avatar speak the English requirement message
+    if (avatar && sessionActive) {
+      try {
+        await avatar.speak({
+          text: "Please speak in English only. I can only understand English.",
+          task_type: TaskType.TALK,
+          taskMode: TaskMode.ASYNC
+        });
+      } catch (speakError) {
+        console.error('❌ Error speaking English requirement:', speakError);
+      }
+    }
+    
+    return;
   }
   
   // Set API call in progress flag
@@ -157,14 +332,44 @@ async function speakText(text: string) {
       const output = fallbackResponse.output;
       console.log('🤖 Fallback AI Response text:', output);
       
+      // Add bot response to chat FIRST
+      addChatMessage(output, false);
+      
       // Update subtitle with the response
       updateSubtitle(output);
       
-      // Add bot response to chat
-      addChatMessage(output, false);
+      // Ensure subtitle is visible
+      if (avatarSubtitle) {
+        avatarSubtitle.style.display = "block";
+        avatarSubtitle.style.color = "#ffffff";
+        avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+        avatarSubtitle.style.padding = "10px 15px";
+        avatarSubtitle.style.borderRadius = "8px";
+        console.log('🎬 Subtitle styling applied');
+      }
       
       // FORCE AVATAR SPEAKING - Ensure avatar actually speaks
       console.log('🎤 FORCING avatar to speak response:', output);
+      
+      // Force show subtitle before avatar speaks
+      if (avatarSubtitle) {
+        avatarSubtitle.textContent = output;
+        avatarSubtitle.style.display = "block";
+        avatarSubtitle.style.color = "#ffffff";
+        avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+        avatarSubtitle.style.padding = "10px 15px";
+        avatarSubtitle.style.borderRadius = "8px";
+        avatarSubtitle.style.position = "absolute";
+        avatarSubtitle.style.bottom = "80px";
+        avatarSubtitle.style.left = "50%";
+        avatarSubtitle.style.transform = "translateX(-50%)";
+        avatarSubtitle.style.zIndex = "1000";
+        avatarSubtitle.style.maxWidth = "80%";
+        avatarSubtitle.style.textAlign = "center";
+        avatarSubtitle.style.fontSize = "16px";
+        avatarSubtitle.style.lineHeight = "1.4";
+        console.log('🎬 Subtitle forced to show before avatar speaks');
+      }
       
       if (avatar && sessionActive) {
         try {
@@ -209,11 +414,21 @@ async function speakText(text: string) {
     console.log('🆔 User question was:', text);
     
     
+    // Add bot response to chat FIRST
+    addChatMessage(output, false);
+    
     // Update subtitle with the response
     updateSubtitle(output);
     
-    // Add bot response to chat
-    addChatMessage(output, false);
+    // Ensure subtitle is visible with proper styling
+    if (avatarSubtitle) {
+      avatarSubtitle.style.display = "block";
+      avatarSubtitle.style.color = "#ffffff";
+      avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+      avatarSubtitle.style.padding = "10px 15px";
+      avatarSubtitle.style.borderRadius = "8px";
+      console.log('🎬 Main API subtitle styling applied');
+    }
     
       // FORCE AVATAR SPEAKING - Ensure avatar actually speaks
       console.log('🎤 FORCING avatar to speak response:', output);
@@ -663,11 +878,34 @@ async function initializeAvatarSession() {
     avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
       console.log("🎤 Avatar started talking");
       isAvatarSpeaking = true;
+      
+      // Force show subtitle when avatar starts talking
+      if (avatarSubtitle && currentSpeakingText) {
+        avatarSubtitle.style.display = "block";
+        avatarSubtitle.style.color = "#ffffff";
+        avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+        avatarSubtitle.style.padding = "10px 15px";
+        avatarSubtitle.style.borderRadius = "8px";
+        avatarSubtitle.style.position = "absolute";
+        avatarSubtitle.style.bottom = "80px";
+        avatarSubtitle.style.left = "50%";
+        avatarSubtitle.style.transform = "translateX(-50%)";
+        avatarSubtitle.style.zIndex = "1000";
+        avatarSubtitle.style.maxWidth = "80%";
+        avatarSubtitle.style.textAlign = "center";
+        avatarSubtitle.style.fontSize = "16px";
+        avatarSubtitle.style.lineHeight = "1.4";
+        console.log("🎬 Subtitle forced to show when avatar started talking");
+      }
     });
 
     avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
       console.log("🎤 Avatar stopped talking");
       isAvatarSpeaking = false;
+      // Clear subtitle when avatar stops speaking
+      setTimeout(() => {
+        clearLiveSubtitle();
+      }, 2000); // Longer delay to allow word-by-word display to complete
       
       // Hide any remaining recording status immediately
       if (recordingStatus) {
@@ -709,7 +947,7 @@ async function initializeAvatarSession() {
     const avatarConfig = {
       quality: AvatarQuality.Low, // CRITICAL: Use Low quality to prevent Code 5 disconnections
       avatarName: "66008d91cfee459689ab288e56eb773f", // Your custom avatar
-      language: "English",
+      language: "English", // Force English language
       voice: { voiceId: "caf3267cce8e4807b190cc45d4a46dcc" }, // Your custom voice
     // OPTIMIZED FOR SPEED - Faster response times
     sessionTimeout: 1800000, // 30 minutes - longer session
@@ -866,6 +1104,27 @@ async function initializeAvatarSession() {
     avatarInterface.style.display = "flex";
     avatarInterface.classList.add("fade-in");
     
+    // Test subtitle visibility when avatar interface is shown
+    console.log("🎬 Avatar interface shown, testing subtitle...");
+    if (avatarSubtitle) {
+      avatarSubtitle.textContent = "Testing subtitle visibility...";
+      avatarSubtitle.style.display = "block";
+      avatarSubtitle.style.color = "#ffffff";
+      avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+      avatarSubtitle.style.padding = "10px 15px";
+      avatarSubtitle.style.borderRadius = "8px";
+      avatarSubtitle.style.position = "absolute";
+      avatarSubtitle.style.bottom = "80px";
+      avatarSubtitle.style.left = "50%";
+      avatarSubtitle.style.transform = "translateX(-50%)";
+      avatarSubtitle.style.zIndex = "1000";
+      avatarSubtitle.style.maxWidth = "80%";
+      avatarSubtitle.style.textAlign = "center";
+      avatarSubtitle.style.fontSize = "16px";
+      avatarSubtitle.style.lineHeight = "1.4";
+      console.log("🎬 Test subtitle applied");
+    }
+    
     // Chat sidebar is closed by default (full screen avatar)
     // Avatar takes full screen width by default
     if (avatarMainContent) {
@@ -887,8 +1146,24 @@ async function initializeAvatarSession() {
     
     // Update subtitle with welcome message
     if (avatarSubtitle) {
-      avatarSubtitle.textContent = "Hi, how can I assist you?";
+      avatarSubtitle.textContent = "Hi! How can I assist you today?";
+      avatarSubtitle.style.display = "block";
+      avatarSubtitle.style.color = "#ffffff";
+      avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+      avatarSubtitle.style.padding = "10px 15px";
+      avatarSubtitle.style.borderRadius = "8px";
+      avatarSubtitle.style.position = "absolute";
+      avatarSubtitle.style.bottom = "80px";
+      avatarSubtitle.style.left = "50%";
+      avatarSubtitle.style.transform = "translateX(-50%)";
+      avatarSubtitle.style.zIndex = "1000";
+      avatarSubtitle.style.maxWidth = "80%";
+      avatarSubtitle.style.textAlign = "center";
+      avatarSubtitle.style.fontSize = "16px";
+      avatarSubtitle.style.lineHeight = "1.4";
+      console.log("🎬 Initial subtitle setup complete");
     }
+    
     
     // Make avatar speak the introduction message
     setTimeout(async () => {
@@ -960,14 +1235,35 @@ async function handleSpeak() {
   
     const userMessage = userInput.value.trim();
     
-    // ENGLISH ONLY: Check if text is in English (more lenient)
+    // ENGLISH ONLY: Check if text is in English (strict enforcement)
     if (!isEnglish(userMessage)) {
       console.log("🌍 Non-English text detected in input:", userMessage);
-      console.log("⚠️ English detection failed, but proceeding anyway for better user experience");
-      // Comment out the English-only restriction for now
-      // addChatMessage("Please type in English. I can only understand and respond in English.", false);
-      // userInput.value = "";
-      // return;
+      console.log("⚠️ English detection failed - enforcing English only");
+      addChatMessage("Please type in English. I can only understand and respond in English.", false);
+      
+      // Update subtitle to show English requirement
+      if (avatarSubtitle) {
+        avatarSubtitle.textContent = "Please type in English only. I can only understand English.";
+        avatarSubtitle.style.color = "#ffa500";
+      }
+      
+      // Clear the input
+      userInput.value = "";
+      
+      // Try to make avatar speak the English requirement message
+      if (avatar && sessionActive) {
+        try {
+          await avatar.speak({
+            text: "Please type in English only. I can only understand English.",
+            task_type: TaskType.TALK,
+            taskMode: TaskMode.ASYNC
+          });
+        } catch (speakError) {
+          console.error('❌ Error speaking English requirement:', speakError);
+        }
+      }
+      
+      return;
     }
     
     if (userMessage === "") {
@@ -1021,8 +1317,24 @@ async function handleSpeak() {
         const output = fallbackResponse.output;
         console.log('🤖 Fallback AI Response text:', output);
         
-        // Add user message to chat
+        // Add user message to chat FIRST
         addChatMessage(userMessage, true);
+        
+        // Add bot response to chat
+        addChatMessage(output, false);
+        
+        // Update subtitle with the response
+        updateSubtitle(output);
+        
+        // Ensure subtitle is visible
+        if (avatarSubtitle) {
+          avatarSubtitle.style.display = "block";
+          avatarSubtitle.style.color = "#ffffff";
+          avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+          avatarSubtitle.style.padding = "10px 15px";
+          avatarSubtitle.style.borderRadius = "8px";
+          console.log('🎬 Subtitle styling applied');
+        }
         
         // Clear input after successful processing and reset styling
         userInput.value = "";
@@ -1117,11 +1429,21 @@ async function handleSpeak() {
       userInput.style.borderColor = "rgba(255, 255, 255, 0.2)";
       userInput.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
       
+      // Add bot response to chat FIRST
+      addChatMessage(finalOutput, false);
+      
       // Update subtitle with the response
       updateSubtitle(finalOutput);
       
-      // Add bot response to chat
-      addChatMessage(finalOutput, false);
+      // Ensure subtitle is visible with proper styling
+      if (avatarSubtitle) {
+        avatarSubtitle.style.display = "block";
+        avatarSubtitle.style.color = "#ffffff";
+        avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
+        avatarSubtitle.style.padding = "10px 15px";
+        avatarSubtitle.style.borderRadius = "8px";
+        console.log('🎬 Second API subtitle styling applied');
+      }
       
       // Keep text input area visible for continuous typing
       // Don't hide text input area - let user continue typing
@@ -2185,7 +2507,8 @@ if (closeChatBtn && chatSidebar) {
 // Update subtitle when avatar speaks
 function updateSubtitle(text: string) {
   if (avatarSubtitle && !subtitleLocked) {
-    avatarSubtitle.textContent = text;
+    // Show complete dialogue subtitle
+    showCompleteSubtitle(text);
   } else if (subtitleLocked) {
     console.log("🔒 Subtitle is locked - not changing to:", text);
   }
@@ -2254,3 +2577,39 @@ function stopAllTTS() {
 // Add event listeners for page unload
 window.addEventListener('beforeunload', stopAllTTS);
 window.addEventListener('unload', stopAllTTS);
+
+// New button event listeners
+
+if (chatBtn) {
+  chatBtn.addEventListener("click", () => {
+    console.log("Chat button clicked");
+    // Show chat sidebar
+    if (chatSidebar) {
+      chatSidebar.classList.add("open");
+    }
+    // Make avatar smaller when chat is open
+    if (avatarMainContent) {
+      avatarMainContent.classList.add("chat-open");
+    }
+    // Show text input area
+    if (textInputArea) {
+      textInputArea.style.display = "flex";
+    }
+  });
+}
+
+if (micBtn) {
+  micBtn.addEventListener("click", () => {
+    console.log("Microphone button clicked");
+    // Toggle recording
+    toggleRecording();
+  });
+}
+
+if (endSessionBtn) {
+  endSessionBtn.addEventListener("click", () => {
+    console.log("End Session button clicked");
+    // Terminate the avatar session
+    terminateAvatarSession();
+  });
+}
