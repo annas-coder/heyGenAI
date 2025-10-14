@@ -275,11 +275,11 @@ async function speakText(text: string) {
   if (!isEnglish(text)) {
     console.log("🌍 Non-English text detected:", text);
     console.log("⚠️ English detection failed - enforcing English only");
-    addChatMessage("Please speak in English. I can only understand and respond in English.", false);
+    addChatMessage("Right now, I will respond in English.", false);
     
     // Update subtitle to show English requirement
     if (avatarSubtitle) {
-      avatarSubtitle.textContent = "Please speak in English only. I can only understand English.";
+      avatarSubtitle.textContent = "Right now, I will respond in English.";
       avatarSubtitle.style.color = "#ffa500";
     }
     
@@ -287,7 +287,7 @@ async function speakText(text: string) {
     if (avatar && sessionActive) {
       try {
         await avatar.speak({
-          text: "Please speak in English only. I can only understand English.",
+          text: "Right now, I will respond in English.",
           task_type: TaskType.TALK,
           taskMode: TaskMode.ASYNC
         });
@@ -321,7 +321,7 @@ async function speakText(text: string) {
       console.log("📡 API call payload:", JSON.stringify({ message: text }));
       llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,  'user-id': 'heygenuser'},
         body: JSON.stringify({ message: text }),
         signal: controller.signal
       });
@@ -1249,7 +1249,7 @@ async function handleSpeak() {
     if (!isEnglish(userMessage)) {
       console.log("🌍 Non-English text detected in input:", userMessage);
       console.log("⚠️ English detection failed - enforcing English only");
-      addChatMessage("Please type in English. I can only understand and respond in English.", false);
+      addChatMessage("Right now, I will respond in English.", false);
       
       // Update subtitle to show English requirement
       if (avatarSubtitle) {
@@ -1314,7 +1314,7 @@ async function handleSpeak() {
       try {
         llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' ,  'user-id': 'heygenuser' },
           body: JSON.stringify({ message: userMessage }),
           signal: controller.signal
         });
@@ -1685,7 +1685,7 @@ async function testAPI() {
   try {
     const response = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json',  'user-id': 'heygenuser' },
       body: JSON.stringify({ message: "Hello, this is a test message" })
     });
     
