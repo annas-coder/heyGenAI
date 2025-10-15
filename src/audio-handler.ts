@@ -174,7 +174,8 @@ export class VoiceRecorder {
             
             formData.append('file', audioBlob, fileName);
             formData.append("model_id", "scribe_v1");
-            formData.append("language", "en");
+            // Remove language restriction to allow all languages
+            // formData.append("language", "en");
             
             console.log('📤 Sending audio file:', fileName, 'Size:', audioBlob.size, 'Type:', audioBlob.type);
             
@@ -185,7 +186,7 @@ export class VoiceRecorder {
             
             console.log('🔑 Using API key:', apiKey.substring(0, 8) + '...');
             
-            const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text?language=en', {
+            const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
                 method: 'POST',
                 headers: {
                     'xi-api-key': apiKey,

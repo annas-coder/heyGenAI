@@ -271,33 +271,8 @@ async function speakText(text: string) {
     return;
   }
   
-  // ENGLISH ONLY: Check if text is in English (strict enforcement)
-  if (!isEnglish(text)) {
-    console.log("🌍 Non-English text detected:", text);
-    console.log("⚠️ English detection failed - enforcing English only");
-    addChatMessage("Right now, I will respond in English.", false);
-    
-    // Update subtitle to show English requirement
-    if (avatarSubtitle) {
-      avatarSubtitle.textContent = "Right now, I will respond in English.";
-      avatarSubtitle.style.color = "#ffa500";
-    }
-    
-    // Try to make avatar speak the English requirement message
-    if (avatar && sessionActive) {
-      try {
-        await avatar.speak({
-          text: "Right now, I will respond in English.",
-          task_type: TaskType.TALK,
-          taskMode: TaskMode.ASYNC
-        });
-      } catch (speakError) {
-        console.error('❌ Error speaking English requirement:', speakError);
-      }
-    }
-    
-    return;
-  }
+  // Accept all languages - no language restriction
+  console.log("🌍 Processing text in any language:", text);
   
   // Set API call in progress flag
   isApiCallInProgress = true;
@@ -950,7 +925,7 @@ async function initializeAvatarSession() {
     const avatarConfig = {
       quality: AvatarQuality.Low, // CRITICAL: Use Low quality to prevent Code 5 disconnections
       avatarName: "66008d91cfee459689ab288e56eb773f", // Your custom avatar
-      language: "English", // Force English language
+      // Remove language restriction to support all languages
       voice: { voiceId: "caf3267cce8e4807b190cc45d4a46dcc" }, // Your custom voice
     // OPTIMIZED FOR SPEED - Faster response times
     sessionTimeout: 1800000, // 30 minutes - longer session
@@ -1245,36 +1220,8 @@ async function handleSpeak() {
   
     const userMessage = userInput.value.trim();
     
-    // ENGLISH ONLY: Check if text is in English (strict enforcement)
-    if (!isEnglish(userMessage)) {
-      console.log("🌍 Non-English text detected in input:", userMessage);
-      console.log("⚠️ English detection failed - enforcing English only");
-      addChatMessage("Right now, I will respond in English.", false);
-      
-      // Update subtitle to show English requirement
-      if (avatarSubtitle) {
-        avatarSubtitle.textContent = "Please type in English only. I can only understand English.";
-        avatarSubtitle.style.color = "#ffa500";
-      }
-      
-      // Clear the input
-      userInput.value = "";
-      
-      // Try to make avatar speak the English requirement message
-      if (avatar && sessionActive) {
-        try {
-          await avatar.speak({
-            text: "Please type in English only. I can only understand English.",
-            task_type: TaskType.TALK,
-            taskMode: TaskMode.ASYNC
-          });
-        } catch (speakError) {
-          console.error('❌ Error speaking English requirement:', speakError);
-        }
-      }
-      
-      return;
-    }
+    // Accept all languages - no language restriction
+    console.log("🌍 Processing user input in any language:", userMessage);
     
     if (userMessage === "") {
       console.log("No input text");
