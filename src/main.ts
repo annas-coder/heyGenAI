@@ -42,6 +42,7 @@ const recordingStatus = document.getElementById("recordingStatus") as HTMLElemen
 const chatBtn = document.getElementById("chatBtn") as HTMLButtonElement;
 const micBtn = document.getElementById("micBtn") as HTMLButtonElement;
 const endSessionBtn = document.getElementById("endSessionBtn") as HTMLButtonElement;
+const avatarVideoSection = document.querySelector(".avatar-video-section") as HTMLElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
@@ -64,16 +65,33 @@ let isApiCallInProgress = false; // Prevent duplicate API calls
 let lastTranscriptionText = ''; // Prevent duplicate transcription processing
 let isRecordingInProgress = false; // Prevent multiple recording operations
 
+// Toast Notification System for Mobile
+function showToast(message: string, type: 'info' | 'error' | 'success' = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  // Trigger animation
+  setTimeout(() => toast.classList.add('show'), 100);
+
+  // Remove toast after 3 seconds
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 // Function to show complete dialogue subtitle
 function showCompleteSubtitle(fullText: string) {
   if (!avatarSubtitle) return;
-  
+
   // Clear any existing interval
   if (wordDisplayInterval) {
     clearInterval(wordDisplayInterval);
     wordDisplayInterval = null;
   }
-  
+
   // Show the complete text immediately
   avatarSubtitle.textContent = fullText;
   avatarSubtitle.style.color = "#ffffff";
@@ -90,7 +108,7 @@ function showCompleteSubtitle(fullText: string) {
   avatarSubtitle.style.textAlign = "center";
   avatarSubtitle.style.fontSize = "16px";
   avatarSubtitle.style.lineHeight = "1.4";
-  
+
   console.log("🎬 Complete subtitle shown:", fullText);
 }
 
@@ -134,7 +152,7 @@ function clearLiveSubtitle() {
         currentSpeakingText = "";
         fullResponseText = "";
         currentWordIndex = 0;
-        
+
         // Clear word display interval
         if (wordDisplayInterval) {
           clearInterval(wordDisplayInterval);
@@ -149,7 +167,7 @@ function clearLiveSubtitle() {
 // Helper function to fetch access token
 async function fetchAccessToken(): Promise<string> {
   const apiKey = import.meta.env.VITE_HEYGEN_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error("HeyGen API key not found. Please set VITE_HEYGEN_API_KEY in your .env file.");
   }
@@ -167,26 +185,26 @@ async function fetchAccessToken(): Promise<string> {
   }
 
   const { data } = await response.json();
-  
+
   if (!data || !data.token) {
     throw new Error("Invalid response from HeyGen API");
   }
-  
+
   return data.token;
 }
 
 // Function to detect if text is in English - Enhanced for better accuracy
 function isEnglish(text: string): boolean {
   console.log("🔍 Checking if text is English:", text);
-  
+
   // Remove extra whitespace and normalize
   const cleanText = text.trim().toLowerCase();
-  
+
   if (!cleanText || cleanText.length === 0) {
     console.log("❌ Empty text detected");
     return false;
   }
-  
+
   // Enhanced English detection with comprehensive word list
   const englishWords = [
     'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
@@ -202,17 +220,17 @@ function isEnglish(text: string): boolean {
     'sit', 'stand', 'open', 'close', 'start', 'stop', 'begin', 'end', 'finish', 'about',
     'tcit', 'dubai', 'twintik', 'technocit', 'company', 'assist', 'question', 'answer', 'information'
   ];
-  
+
   // Check for basic English character pattern (Latin alphabet only)
   const englishPattern = /^[a-zA-Z\s.,!?;:'"()-]+$/;
-  
+
   // Convert to lowercase and split into words
   const words = cleanText.split(/\s+/);
-  
+
   // Count English words
   const englishWordCount = words.filter(word => englishWords.includes(word)).length;
   const totalWords = words.length;
-  
+
   // Check for English sentence patterns
   const englishSentencePatterns = [
     /^(hi|hello|hey)\s/i,
@@ -223,18 +241,18 @@ function isEnglish(text: string): boolean {
     /^(the|a|an)\s/i,
     /^(about|tcit|dubai|company)\s/i
   ];
-  
+
   const hasEnglishWords = englishWordCount > 0;
   const matchesPattern = englishPattern.test(text);
   const matchesSentencePattern = englishSentencePatterns.some(pattern => pattern.test(text));
-  
+
   console.log("🔍 Has English words:", hasEnglishWords, `(${englishWordCount}/${totalWords})`);
   console.log("🔍 Matches English pattern:", matchesPattern);
   console.log("🔍 Matches sentence pattern:", matchesSentencePattern);
-  
+
   // More strict: require English characters AND (English words OR sentence pattern)
   const isEnglishText = matchesPattern && (hasEnglishWords || matchesSentencePattern) && text.trim().length > 0;
-  
+
   console.log("🔍 Final English detection result:", isEnglishText);
   return isEnglishText;
 }
@@ -242,53 +260,53 @@ function isEnglish(text: string): boolean {
 // Speech-to-speech functionality
 async function speakText(text: string) {
   console.log("🎤 speakText called with:", text);
-  
+
   // Show complete dialogue subtitle
   showCompleteSubtitle(text);
-  
+
   // Prevent duplicate API calls
   if (isApiCallInProgress) {
     console.log("⚠️ API call already in progress - ignoring duplicate request");
     console.log("⚠️ Current API call in progress for text:", text);
     return;
   }
-  
+
   if (!avatar) {
     console.error("❌ Avatar not initialized");
     addChatMessage("Avatar not ready. Please try again.", false);
     return;
   }
-  
+
   // Check if avatar is in a good state
   if (!avatar) {
     console.log("🎤 Avatar not ready");
     addChatMessage("Avatar is not ready. Please wait a moment and try again.", false);
     return;
   }
-  
+
   if (!text || !text.trim()) {
     console.error("❌ Empty text provided");
     return;
   }
-  
+
   // Accept all languages - no language restriction
   console.log("🌍 Processing text in any language:", text);
-  
+
   // Set API call in progress flag
   isApiCallInProgress = true;
-  
+
   try {
     console.log('🎤 Processing voice input:', text);
-    
-      
+
+
       // Send to your API endpoint with faster timeout
     console.log('📡 Sending to API:', text);
     console.log('📡 API Call ID:', Date.now()); // Unique identifier for this API call
-    
+
     // Create AbortController for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-    
+
     // Try primary API endpoint first
     let llmResponse;
     try {
@@ -309,13 +327,13 @@ async function speakText(text: string) {
       };
       const output = fallbackResponse.output;
       console.log('🤖 Fallback AI Response text:', output);
-      
+
       // Add bot response to chat FIRST
       addChatMessage(output, false);
-      
+
       // Update subtitle with the response
       updateSubtitle(output);
-      
+
       // Ensure subtitle is visible
       if (avatarSubtitle) {
         avatarSubtitle.style.display = "block";
@@ -325,10 +343,10 @@ async function speakText(text: string) {
         avatarSubtitle.style.borderRadius = "8px";
         console.log('🎬 Subtitle styling applied');
       }
-      
+
       // FORCE AVATAR SPEAKING - Ensure avatar actually speaks
       console.log('🎤 FORCING avatar to speak response:', output);
-      
+
       // Force show subtitle before avatar speaks
       if (avatarSubtitle) {
         avatarSubtitle.textContent = output;
@@ -348,7 +366,7 @@ async function speakText(text: string) {
         avatarSubtitle.style.lineHeight = "1.4";
         console.log('🎬 Subtitle forced to show before avatar speaks');
       }
-      
+
       if (avatar && sessionActive) {
         try {
           await avatar.speak({
@@ -361,43 +379,43 @@ async function speakText(text: string) {
           console.error('❌ Error making avatar speak:', speakError);
         }
       }
-      
+
       return;
     }
-      
+
     clearTimeout(timeoutId);
-      
+
     console.log('📡 API Response status:', llmResponse.status);
     console.log('📡 API Response headers:', Object.fromEntries(llmResponse.headers.entries()));
-    
+
     if (!llmResponse.ok) {
       const errorText = await llmResponse.text();
       console.error('❌ API Error Response:', errorText);
       throw new Error(`API request failed with status ${llmResponse.status}: ${errorText}`);
     }
-    
+
     const responseData = await llmResponse.json();
     console.log('📡 API Response data:', responseData);
     console.log('📡 Response data keys:', Object.keys(responseData));
-    
+
     // Try multiple possible response fields
     const output = responseData.output || responseData.message || responseData.response || responseData.text || responseData.data || "I didn't understand that. Please try again.";
     console.log('🤖 AI Response text:', output);
     console.log('🤖 Response length:', output.length);
     console.log('🤖 Full response data for debugging:', JSON.stringify(responseData, null, 2));
-    
+
     // Add unique identifier to track this response
     const responseId = Date.now();
     console.log('🆔 Response ID for tracking:', responseId);
     console.log('🆔 User question was:', text);
-    
-    
+
+
     // Add bot response to chat FIRST
     addChatMessage(output, false);
-    
+
     // Update subtitle with the response
     updateSubtitle(output);
-    
+
     // Ensure subtitle is visible with proper styling
     if (avatarSubtitle) {
       avatarSubtitle.style.display = "block";
@@ -407,12 +425,12 @@ async function speakText(text: string) {
       avatarSubtitle.style.borderRadius = "8px";
       console.log('🎬 Main API subtitle styling applied');
     }
-    
+
       // FORCE AVATAR SPEAKING - Ensure avatar actually speaks
       console.log('🎤 FORCING avatar to speak response:', output);
       console.log('🎤 Avatar will speak this exact text:', JSON.stringify(output));
       console.log('🆔 Sending response ID to avatar:', responseId);
-      
+
       if (avatar && sessionActive) {
         try {
           console.log('🎤 Attempting avatar speak with explicit config');
@@ -424,23 +442,23 @@ async function speakText(text: string) {
             taskMode: TaskMode.ASYNC
           });
           console.log('✅ Avatar speaking completed successfully');
-          
+
           isAvatarSpeaking = false;
           console.log("✅ Avatar speaking completed");
-          
+
         } catch (speakError) {
           console.error('❌ Avatar speaking failed:', speakError);
           // CRITICAL: NO BROWSER TTS FALLBACK - Only avatar should speak
           console.log('❌ Avatar speech failed - NO BROWSER TTS FALLBACK');
           console.log('🔄 Waiting for avatar to become available...');
-          
+
           // Hide speaking indicator on error
           const avatarSpeakingIndicator = document.getElementById("avatarSpeakingIndicator");
           if (avatarSpeakingIndicator) {
             avatarSpeakingIndicator.style.display = "none";
           }
           isAvatarSpeaking = false;
-          
+
           if (avatarSubtitle) {
             avatarSubtitle.textContent = "Avatar speech failed. Please wait for avatar to reconnect.";
             avatarSubtitle.style.color = "#ffa500";
@@ -452,7 +470,7 @@ async function speakText(text: string) {
         if (avatar) {
           try {
             console.log('🔍 Avatar is available');
-            
+
             console.log('✅ Avatar is available - retrying speech');
             try {
               await avatar.speak({
@@ -469,42 +487,42 @@ async function speakText(text: string) {
             console.log('❌ Error checking avatar status:', statusError);
           }
         }
-        
+
         // CRITICAL: Check if session is completely dead and needs restart
         console.log('🔍 Avatar unavailable - checking if session needs restart...');
-        
+
         // CRITICAL: Try to keep session interactive even when avatar is not responding
         if (sessionActive && avatar) {
           console.log('🔍 Session is active but avatar not responding - attempting to maintain interactivity');
-          
+
           if (avatarSubtitle) {
             avatarSubtitle.textContent = "Avatar not responding. Attempting to maintain session interactivity...";
             avatarSubtitle.style.color = "#ffa500";
           }
-          
+
           // CRITICAL: Don't mark session as dead - try to keep it interactive
           console.log('🔄 Attempting to keep session interactive despite avatar issues...');
-          
+
           // Try to maintain session activity
           sessionActive = true;
           lastStreamActivity = Date.now();
-          
+
           if (avatarSubtitle) {
             avatarSubtitle.textContent = "Session maintained. Please try speaking again.";
             avatarSubtitle.style.color = "#10b981";
           }
         }
-        
+
         // CRITICAL: NO BROWSER TTS - Only avatar should speak
         console.log('❌ Avatar unavailable - NO BROWSER TTS FALLBACK');
         console.log('🔄 Waiting for avatar to become available...');
-        
+
         if (avatarSubtitle) {
           avatarSubtitle.textContent = "Avatar unavailable. Please wait for avatar to reconnect.";
           avatarSubtitle.style.color = "#ffa500";
         }
       }
-      
+
     } catch (error) {
       console.error("❌ Error processing speech:", error);
       isAvatarSpeaking = false; // Reset speaking flag on error
@@ -522,10 +540,10 @@ function initializeVoiceRecorder() {
     console.log("🎤 Voice recorder already exists - skipping initialization");
     return;
   }
-  
+
   console.log("🎤 Initializing voice recorder...");
   voiceRecorder = new VoiceRecorder(
-    (status) => { 
+    (status) => {
       console.log("🎤 Status:", status);
       if (recordingStatus) {
         recordingStatus.textContent = status;
@@ -538,17 +556,17 @@ function initializeVoiceRecorder() {
     },
     (text) => {
       console.log("🎤 Transcription received:", text);
-      
+
       // Prevent duplicate transcription processing
       if (text === lastTranscriptionText) {
         console.log("⚠️ Duplicate transcription detected - ignoring");
         return;
       }
-      
+
       if (text && text.trim().length > 0) {
         console.log("🎤 Processing transcribed text:", text);
         lastTranscriptionText = text; // Store to prevent duplicates
-        
+
         // Add user message to chat
         addChatMessage(text, true);
         // Process the text
@@ -566,13 +584,13 @@ async function toggleRecording() {
     console.log("🎤 toggleRecording called, isRecording:", isRecording);
     console.log("🎤 Voice recorder exists:", !!voiceRecorder);
     console.log("🎤 Session active:", sessionActive);
-    
+
     // Prevent multiple simultaneous calls to toggleRecording
     if (isApiCallInProgress || isRecordingInProgress) {
       console.log("⚠️ Operation in progress - ignoring recording toggle");
       return;
     }
-    
+
     // Check if session is active
     if (!sessionActive) {
       console.log("❌ Session not active - cannot record voice");
@@ -605,7 +623,7 @@ async function toggleRecording() {
         return;
       }
     }
-    
+
   if (!voiceRecorder) {
       console.log("🎤 Creating new voice recorder...");
     initializeVoiceRecorder();
@@ -616,13 +634,13 @@ async function toggleRecording() {
 
   if (!isRecording) {
       console.log("🎤 Starting recording...");
-      
+
       // Set recording in progress flag
       isRecordingInProgress = true;
-      
+
       // Reset transcription tracking for new recording
       lastTranscriptionText = '';
-      
+
     // Start recording
       if (recordButton) {
     recordButton.classList.add("recording");
@@ -681,15 +699,15 @@ async function initializeAvatarSession() {
     console.log("⚠️ Avatar session already initializing - skipping");
     return;
   }
-  
+
   if (sessionActive && avatar) {
     console.log("⚠️ Avatar session already active - skipping initialization");
     return;
   }
-  
+
   isInitializing = true;
   console.log("🚀 Starting avatar session initialization");
-  
+
   // Disable get started button and show loading state
   getStartedBtn.disabled = true;
   getStartedBtn.innerHTML = '<span>Loading...</span>';
@@ -703,23 +721,23 @@ async function initializeAvatarSession() {
     if (!openaiApiKey) {
       throw new Error("OpenAI API key not found. Please set VITE_OPENAI_API_KEY in your .env file.");
     }
-    
+
     // openaiAssistant = new OpenAIAssistant(openaiApiKey);
     // await openaiAssistant.initialize();
-    
+
     // COMPREHENSIVE AVATAR SETUP - All issues fixed
     avatar.on(StreamingEvents.STREAM_READY, handleStreamReady);
-    
+
     // COMPREHENSIVE DISCONNECTION DIAGNOSTICS - Root cause analysis
     avatar.on(StreamingEvents.STREAM_DISCONNECTED, (data) => {
       console.log("🔌 Stream disconnected - comprehensive diagnostics");
       console.log("🔍 Disconnect data:", data);
-      
+
       // COMPREHENSIVE DIAGNOSTICS
       const disconnectCode = data?.detail || data?.code || 'unknown';
       const timestamp = new Date().toISOString();
       const sessionDuration = Date.now() - (window as any).sessionStartTime;
-      
+
       console.log("🔍 DISCONNECTION ANALYSIS:");
       console.log("  - Code:", disconnectCode);
       console.log("  - Timestamp:", timestamp);
@@ -727,7 +745,7 @@ async function initializeAvatarSession() {
       console.log("  - Last activity:", Date.now() - lastStreamActivity, "ms ago");
       console.log("  - Session active:", sessionActive);
       console.log("  - Avatar exists:", !!avatar);
-      
+
       // Check video stream status
       if (videoElement && videoElement.srcObject) {
         const stream = videoElement.srcObject as MediaStream;
@@ -735,12 +753,12 @@ async function initializeAvatarSession() {
         console.log("  - Video stream tracks:", tracks.length);
         console.log("  - Active tracks:", tracks.filter(t => t.readyState === 'live').length);
       }
-      
+
       // Check network connectivity
       if (navigator.onLine !== undefined) {
         console.log("  - Browser online:", navigator.onLine);
       }
-      
+
       // Interpret disconnect codes with specific solutions
       let errorMessage = "Connection lost. ";
       let solution = "";
@@ -769,15 +787,15 @@ async function initializeAvatarSession() {
           errorMessage += "Unknown connection issue.";
           solution = "Please refresh the page to reconnect.";
       }
-      
+
       console.log("🔍 Disconnect reason:", errorMessage);
       console.log("💡 Solution:", solution);
-      
+
       if (avatarSubtitle) {
         avatarSubtitle.textContent = errorMessage;
         avatarSubtitle.style.color = "#ff6b6b";
       }
-      
+
       // Handle different disconnect codes appropriately
       if (disconnectCode === 1 || disconnectCode === 2) {
         console.log("❌ Critical disconnect - attempting session recovery");
@@ -792,36 +810,36 @@ async function initializeAvatarSession() {
         }, 3000);
       } else if (disconnectCode === 5) {
         console.log("⚠️ Code 5 disconnect - implementing auto-refresh error handling");
-        
+
         if (avatarSubtitle) {
           avatarSubtitle.textContent = "Code 5 disconnect detected. Auto-refreshing session...";
           avatarSubtitle.style.color = "#ffa500";
         }
-        
+
         // CRITICAL: Code 5 auto-refresh error handling - check API key validity first
         const code5RefreshTimeout = setTimeout(async () => {
           if (sessionActive && avatar) {
             // CRITICAL: Check if API key is already invalid or all monitoring stopped
             if ((window as any).apiKeyInvalid || (window as any).allMonitoringStopped) {
               console.log("🔍 API key already marked as invalid or monitoring stopped - skipping refresh attempt");
-              
+
               if (avatarSubtitle) {
                 avatarSubtitle.textContent = "API key expired. Using browser TTS for continued interaction.";
                 avatarSubtitle.style.color = "#ffa500";
               }
-              
+
               // Keep session active but don't try to refresh
               sessionActive = true;
               lastStreamActivity = Date.now();
               return;
             }
-            
+
             console.log("🔄 Code 5 auto-refresh: attempting session refresh...");
-            
+
             try {
               // CRITICAL: Auto-refresh session for Code 5 disconnects
               await refreshSessionWithNewApiKey();
-              
+
               if (sessionActive) {
                 console.log("✅ Code 5 auto-refresh successful");
                 if (avatarSubtitle) {
@@ -831,32 +849,32 @@ async function initializeAvatarSession() {
               }
             } catch (refreshError) {
               console.log("❌ Code 5 auto-refresh failed:", refreshError);
-              
+
               // CRITICAL: Don't mark session as dead - keep it interactive
               console.log("🔄 Code 5 auto-refresh failed, but keeping session interactive...");
-              
+
               if (avatarSubtitle) {
                 avatarSubtitle.textContent = "Code 5 auto-refresh failed, but session remains interactive. Please try speaking again.";
                 avatarSubtitle.style.color = "#ffa500";
               }
-              
+
               // Keep session active even if refresh failed
               sessionActive = true;
               lastStreamActivity = Date.now();
             }
           }
         }, 1000); // Immediate auto-refresh for Code 5
-        
+
         // Store timeout reference for cleanup
         (window as any).code5RefreshTimeout = code5RefreshTimeout;
       }
     });
-    
+
     // MINIMAL EVENT HANDLERS - Prevent disconnections
     avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
       console.log("🎤 Avatar started talking");
       isAvatarSpeaking = true;
-      
+
       // Force show subtitle when avatar starts talking
       if (avatarSubtitle && currentSpeakingText) {
         avatarSubtitle.style.display = "block";
@@ -884,13 +902,13 @@ async function initializeAvatarSession() {
       setTimeout(() => {
         clearLiveSubtitle();
       }, 2000); // Longer delay to allow word-by-word display to complete
-      
+
       // Hide any remaining recording status immediately
       if (recordingStatus) {
         recordingStatus.style.display = "none";
         recordingStatus.textContent = "";
       }
-      
+
       // Force hide any remaining status messages after a short delay
       setTimeout(() => {
         if (recordingStatus) {
@@ -898,30 +916,30 @@ async function initializeAvatarSession() {
           recordingStatus.textContent = "";
         }
       }, 100);
-      
+
       // Re-enable input after speaking
       if (userInput) {
         userInput.disabled = false;
         userInput.focus();
       }
     });
-    
+
     // Add diagnostic logging for stream ready
     avatar.on(StreamingEvents.STREAM_READY, (data) => {
       console.log("🔍 DIAGNOSTIC: Stream ready event fired");
       console.log("🔍 Stream ready data:", data);
     });
-    
+
     console.log("✅ Comprehensive avatar setup - all issues fixed");
-    
+
     console.log("✅ Essential avatar functionality restored - video will display");
-    
+
     // Use your custom avatar with specific voice
     console.log("🚀 Using your custom avatar with voice configuration");
-    
+
     // SESSION TIMEOUT CONFIG - 30 minutes session with your custom avatar
     console.log("⏰ Setting session timeout to 30 minutes with your custom avatar");
-    
+
     const avatarConfig = {
       quality: AvatarQuality.Low, // CRITICAL: Use Low quality to prevent Code 5 disconnections
       avatarName: "66008d91cfee459689ab288e56eb773f", // Your custom avatar
@@ -943,16 +961,16 @@ async function initializeAvatarSession() {
     maxRetries: 1, // Single retry for speed
     heartbeatInterval: 5000 // 5 second heartbeat for responsiveness
     };
-    
+
     // CRITICAL: Make avatarConfig globally accessible for session refresh
     (window as any).avatarConfig = avatarConfig;
-    
+
     console.log("⏰ Avatar configured for 60-minute session with your custom avatar");
-    
+
     try {
       sessionData = await avatar.createStartAvatar(avatarConfig);
       console.log("✅ Avatar session created successfully:", sessionData);
-      
+
       // DIAGNOSTIC: Check session data
       console.log("🔍 Session data details:", {
         sessionId: sessionData?.sessionId,
@@ -960,7 +978,7 @@ async function initializeAvatarSession() {
         avatarName: sessionData?.avatarName,
         voiceId: sessionData?.voiceId
       });
-      
+
     } catch (avatarError) {
       console.error("❌ AVATAR CREATION FAILED:", avatarError);
       console.log("🔍 Error details:", {
@@ -968,11 +986,11 @@ async function initializeAvatarSession() {
         status: (avatarError as any).status || 'unknown',
         code: (avatarError as any).code || 'unknown'
       });
-      
+
       // Enhanced error handling with specific solutions
       let errorMessage = "Avatar creation failed: ";
       let solution = "";
-      
+
       if ((avatarError as any).message && (avatarError as any).message.includes("timeout")) {
         errorMessage += "Connection timeout";
         solution = "Please check your internet connection and try again.";
@@ -986,9 +1004,9 @@ async function initializeAvatarSession() {
         errorMessage += (avatarError as any).message || 'Unknown error';
         solution = "Please refresh the page and try again.";
       }
-      
+
       console.log("💡 Solution:", solution);
-      alert(`${errorMessage}\n\nSolution: ${solution}`);
+      showToast(`${errorMessage} ${solution}`, 'error');
       return;
     }
 
@@ -998,22 +1016,22 @@ async function initializeAvatarSession() {
     sessionActive = true;
     isInitializing = false;
     (window as any).sessionStartTime = Date.now(); // Track session start for diagnostics
-    
+
     // CRITICAL: Track avatar instance to prevent multiple instances
     if (!(window as any).avatarInstances) {
       (window as any).avatarInstances = [];
     }
     (window as any).avatarInstances.push(avatar);
     console.log(`🔍 Avatar instances count: ${(window as any).avatarInstances.length}`);
-    
+
     console.log("🎯 Session is now active and will persist until End Session is clicked");
-    
+
     // COMPREHENSIVE SESSION SETUP - All stability features
     console.log("✅ Comprehensive session setup - avatar ready for uninterrupted interaction");
-    
+
     // ESSENTIAL SETUP - Add basic connection stability
     console.log("✅ Essential setup - basic connection stability");
-    
+
     // MINIMAL connection monitoring - reduced to prevent interruptions
     const connectionMonitor = setInterval(() => {
       if (sessionActive && avatar) {
@@ -1021,19 +1039,19 @@ async function initializeAvatarSession() {
         // NO active operations that could interfere with connection
       }
     }, 300000); // Check every 5 minutes - much reduced frequency
-    
+
     // Store for cleanup
     (window as any).connectionMonitor = connectionMonitor;
-    
+
     // ADDED: Smart session health monitoring
     const sessionHealthMonitor = setInterval(() => {
       if (sessionActive && avatar) {
         console.log("💓 Session health check - monitoring avatar status");
-        
+
         // Check if avatar is still responsive
         if (avatar) {
           console.log("🔍 Avatar is available");
-          
+
           console.log("⚠️ Avatar health check - monitoring");
           // Don't restart immediately, let user know
           if (avatarSubtitle) {
@@ -1043,10 +1061,10 @@ async function initializeAvatarSession() {
         }
       }
     }, 300000); // Check every 5 minutes
-    
+
     // Store for cleanup
     (window as any).sessionHealthMonitor = sessionHealthMonitor;
-    
+
     // Add session timeout display
     let sessionStartTime = Date.now();
     const sessionTimeoutDisplay = setInterval(() => {
@@ -1055,9 +1073,9 @@ async function initializeAvatarSession() {
         const remaining = 3600000 - elapsed; // 60 minutes - elapsed
         const minutes = Math.floor(remaining / 60000);
         const seconds = Math.floor((remaining % 60000) / 1000);
-        
+
         console.log(`⏰ Session time remaining: ${minutes}:${seconds.toString().padStart(2, '0')}`);
-        
+
         // Update subtitle with session time if needed
         if (avatarSubtitle && remaining < 300000) { // Less than 5 minutes
           avatarSubtitle.textContent = `Session time remaining: ${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -1065,15 +1083,15 @@ async function initializeAvatarSession() {
         }
       }
     }, 120000); // Every 2 minutes - much reduced frequency to prevent interference
-    
+
     // Store for cleanup
     (window as any).sessionTimeoutDisplay = sessionTimeoutDisplay;
-    
+
     // Simple initialization without complex testing
     console.log("✅ Avatar session initialized - ready for interaction");
-    
+
     // API test removed - only call API when user interacts
-    
+
     // Simple connection monitoring without complex payload monitoring
     console.log("✅ Simple connection monitoring enabled");
 
@@ -1081,7 +1099,7 @@ async function initializeAvatarSession() {
     welcomeScreen.style.display = "none";
     avatarInterface.style.display = "flex";
     avatarInterface.classList.add("fade-in");
-    
+
     // Test subtitle visibility when avatar interface is shown
     console.log("🎬 Avatar interface shown, testing subtitle...");
     if (avatarSubtitle) {
@@ -1102,18 +1120,18 @@ async function initializeAvatarSession() {
       avatarSubtitle.style.lineHeight = "1.4";
       console.log("🎬 Test subtitle applied");
     }
-    
+
     // Chat sidebar is closed by default (full screen avatar)
     // Avatar takes full screen width by default
     if (avatarMainContent) {
       avatarMainContent.classList.remove("chat-open");
     }
-    
+
     // Show text input area by default for easier access
     if (textInputArea) {
       textInputArea.style.display = "flex";
     }
-    
+
     // Ensure both buttons are visible by default
     if (recordButton) {
       recordButton.style.display = "flex";
@@ -1121,7 +1139,7 @@ async function initializeAvatarSession() {
     if (textInputBtn) {
       textInputBtn.style.display = "flex";
     }
-    
+
     // Update subtitle with welcome message
     if (avatarSubtitle) {
       avatarSubtitle.textContent = "Hi! How can I assist you today?";
@@ -1141,8 +1159,8 @@ async function initializeAvatarSession() {
       avatarSubtitle.style.lineHeight = "1.4";
       console.log("🎬 Initial subtitle setup complete");
     }
-    
-    
+
+
     // Make avatar speak the introduction message
     setTimeout(async () => {
       if (avatar) {
@@ -1158,16 +1176,53 @@ async function initializeAvatarSession() {
         }
       }
     }, 2000);
-    
+
     // Ensure input is properly enabled
     setTimeout(() => {
       ensureInputEnabled();
     }, 500);
 
+    // Keyboard Handling - Detect keyboard open/close on mobile
+    if (window.visualViewport) {
+      let isChatOpen = false; // Track chat state for this handler
+
+      // Update chat open state when chat is toggled
+      const updateChatState = () => {
+        isChatOpen = chatSidebar?.classList.contains('open') || false;
+      };
+
+      // Add listeners to track chat state
+      if (chatBtn) {
+        chatBtn.addEventListener('click', updateChatState);
+      }
+      if (closeChatBtn) {
+        closeChatBtn.addEventListener('click', updateChatState);
+      }
+
+      window.visualViewport.addEventListener('resize', () => {
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+        const screenHeight = window.screen.height;
+
+        if (avatarVideoSection) {
+          if (viewportHeight < screenHeight * 0.75) {
+            // Keyboard is open - shrink video
+            avatarVideoSection.classList.add('keyboard-open');
+            console.log('🎹 Keyboard detected - video shrinking');
+          } else {
+            // Keyboard closed - restore size based on chat state
+            avatarVideoSection.classList.remove('keyboard-open');
+            console.log('🎹 Keyboard hidden - video restoring');
+          }
+        }
+      });
+
+      console.log('✅ Keyboard handling enabled');
+    }
+
   } catch (error) {
     console.error("Failed to initialize avatar session:", error);
-    alert(`Failed to initialize avatar session: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    
+    showToast(`Failed to initialize avatar session: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+
     // Reset flags and button state
     isInitializing = false;
     sessionActive = false;
@@ -1183,16 +1238,16 @@ async function handleSpeak() {
   console.log("🎯 User input element:", userInput);
   console.log("🎯 Speak button disabled:", speakButton.disabled);
   console.log("🎯 API call in progress:", isApiCallInProgress);
-  
+
   // Prevent duplicate API calls
   if (isApiCallInProgress) {
     console.log("⚠️ API call already in progress - ignoring duplicate request");
     console.log("⚠️ Current API call status:", isApiCallInProgress);
     return;
   }
-  
+
   console.log("🚀 Starting new API call for text:", userInput.value);
-  
+
   // Stop any existing avatar speaking that might be stuck
   if (avatar) {
     try {
@@ -1201,33 +1256,33 @@ async function handleSpeak() {
       console.log('🛑 Error stopping avatar speaking (this is OK):', error);
     }
   }
-  
+
   // Stop any existing browser TTS
   if ('speechSynthesis' in window) {
     speechSynthesis.cancel();
     console.log('🛑 Stopped any existing browser TTS');
   }
-  
+
   if (!avatar) {
     console.error("Avatar not initialized");
     return;
   }
-  
+
   if (!userInput.value || userInput.value.trim() === "") {
     console.log("No input text");
     return;
   }
-  
+
     const userMessage = userInput.value.trim();
-    
+
     // Accept all languages - no language restriction
     console.log("🌍 Processing user input in any language:", userMessage);
-    
+
     if (userMessage === "") {
       console.log("No input text");
       return;
     }
-    
+
     // Set API call in progress flag
     isApiCallInProgress = true;
     // Disable speak button and show loading state
@@ -1238,24 +1293,24 @@ async function handleSpeak() {
         <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
       </svg>
     `;
-    
-    
+
+
     // Show user what they typed in the input field
     console.log("User typed:", userMessage);
-    
+
     // Add visual feedback that text is being processed
     userInput.style.borderColor = "#8b5cf6";
     userInput.style.boxShadow = "0 0 0 2px rgba(139, 92, 246, 0.3)";
-    
-    
+
+
     try {
       console.log("📡 Sending request to API with message:", userMessage);
       console.log("📡 API Call ID:", Date.now()); // Unique identifier for this API call
-      
+
       // Create AbortController for timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-      
+
       // Try primary API endpoint first
       let llmResponse;
       try {
@@ -1273,16 +1328,16 @@ async function handleSpeak() {
       };
         const output = fallbackResponse.output;
         console.log('🤖 Fallback AI Response text:', output);
-        
+
         // Add user message to chat FIRST
         addChatMessage(userMessage, true);
-        
+
         // Add bot response to chat
         addChatMessage(output, false);
-        
+
         // Update subtitle with the response
         updateSubtitle(output);
-        
+
         // Ensure subtitle is visible
         if (avatarSubtitle) {
           avatarSubtitle.style.display = "block";
@@ -1292,27 +1347,27 @@ async function handleSpeak() {
           avatarSubtitle.style.borderRadius = "8px";
           console.log('🎬 Subtitle styling applied');
         }
-        
+
         // Clear input after successful processing and reset styling
         userInput.value = "";
         userInput.style.borderColor = "rgba(255, 255, 255, 0.2)";
         userInput.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
-        
+
         // Update subtitle with the response
         updateSubtitle(output);
-        
+
         // Add bot response to chat
         addChatMessage(output, false);
-        
+
         // Add unique identifier to track this response
         const responseId = Date.now();
         console.log('🆔 Response ID for tracking:', responseId);
-        
+
         // FORCE AVATAR SPEAKING - Ensure avatar actually speaks
         console.log("🎤 FORCING avatar to speak response:", output);
         console.log("🎤 Avatar will speak this exact text:", JSON.stringify(output));
         console.log('🆔 Sending response ID to avatar:', responseId);
-        
+
         if (avatar && sessionActive) {
           try {
             console.log("🎤 Avatar speak text being sent:", JSON.stringify(output));
@@ -1327,7 +1382,7 @@ async function handleSpeak() {
             console.error('❌ Error making avatar speak:', speakError);
           }
         }
-        
+
         // Reset button state
         speakButton.disabled = false;
         speakButton.innerHTML = `
@@ -1339,37 +1394,37 @@ async function handleSpeak() {
           </svg>
           Speak
         `;
-        
+
         return;
       }
-      
+
       clearTimeout(timeoutId);
-      
+
       console.log("📡 API Response Status:", llmResponse.status);
       console.log("📡 API Response OK:", llmResponse.ok);
       console.log("📡 API Response headers:", Object.fromEntries(llmResponse.headers.entries()));
-      
+
       if (!llmResponse.ok) {
         const errorText = await llmResponse.text();
         console.error("❌ API Error Response:", errorText);
         throw new Error(`API request failed with status ${llmResponse.status}: ${errorText}`);
       }
-      
+
       const responseData = await llmResponse.json();
       console.log("📡 Full API Response:", responseData);
       console.log("📡 Response data keys:", Object.keys(responseData));
-      
+
       // Add unique identifier to track this response
       const responseId = Date.now();
       console.log('🆔 Response ID for tracking:', responseId);
-      
+
       // Try multiple possible response fields
       const output = responseData.output || responseData.message || responseData.response || responseData.text || responseData.data || "I didn't understand that. Please try again.";
       console.log("📡 Extracted output:", output);
       console.log("📡 Output length:", output.length);
       console.log("📡 Full response data for debugging:", JSON.stringify(responseData, null, 2));
       console.log('🆔 User question was:', userMessage);
-      
+
       // Ensure we have a valid response
       let finalOutput = output;
       if (!output || output.trim() === "") {
@@ -1377,21 +1432,21 @@ async function handleSpeak() {
         finalOutput = "I'm sorry, I didn't get a proper response. Please try asking your question again.";
         console.log("📡 Using fallback output:", finalOutput);
       }
-      
+
       // Add user message to chat
       addChatMessage(userMessage, true);
-      
+
       // Clear input after successful processing and reset styling
       userInput.value = "";
       userInput.style.borderColor = "rgba(255, 255, 255, 0.2)";
       userInput.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
-      
+
       // Add bot response to chat FIRST
       addChatMessage(finalOutput, false);
-      
+
       // Update subtitle with the response
       updateSubtitle(finalOutput);
-      
+
       // Ensure subtitle is visible with proper styling
       if (avatarSubtitle) {
         avatarSubtitle.style.display = "block";
@@ -1401,7 +1456,7 @@ async function handleSpeak() {
         avatarSubtitle.style.borderRadius = "8px";
         console.log('🎬 Second API subtitle styling applied');
       }
-      
+
       // Keep text input area visible for continuous typing
       // Don't hide text input area - let user continue typing
       if (textInputArea) {
@@ -1413,10 +1468,10 @@ async function handleSpeak() {
           userInput.focus();
         }
       }, 100);
-      
+
       // FORCE AVATAR SPEAKING - Ensure avatar actually speaks
       console.log("🎤 FORCING avatar to speak response:", finalOutput);
-      
+
       if (avatar && sessionActive) {
         try {
           console.log("🎤 Attempting avatar speak with explicit config");
@@ -1426,7 +1481,7 @@ async function handleSpeak() {
             taskMode: TaskMode.ASYNC
           });
           console.log("✅ Avatar speaking completed successfully");
-          
+
           // CRITICAL: Force hide speaking indicator immediately after speak completes
           const avatarSpeakingIndicator = document.getElementById("avatarSpeakingIndicator");
           if (avatarSpeakingIndicator) {
@@ -1434,20 +1489,20 @@ async function handleSpeak() {
           }
           isAvatarSpeaking = false;
           console.log("✅ Avatar speaking indicator hidden after completion");
-          
+
         } catch (speakError) {
           console.error("❌ Avatar speaking failed:", speakError);
           // CRITICAL: NO BROWSER TTS FALLBACK - Only avatar should speak
           console.log("❌ Avatar speech failed - NO BROWSER TTS FALLBACK");
           console.log("🔄 Waiting for avatar to become available...");
-          
+
           // Hide speaking indicator on error
           const avatarSpeakingIndicator = document.getElementById("avatarSpeakingIndicator");
           if (avatarSpeakingIndicator) {
             avatarSpeakingIndicator.style.display = "none";
           }
           isAvatarSpeaking = false;
-          
+
           if (avatarSubtitle) {
             avatarSubtitle.textContent = "Avatar speech failed. Please wait for avatar to reconnect.";
             avatarSubtitle.style.color = "#ffa500";
@@ -1459,7 +1514,7 @@ async function handleSpeak() {
         if (avatar) {
           try {
             console.log("🔍 Avatar is available");
-            
+
             console.log("✅ Avatar is available - retrying speech");
             try {
               await avatar.speak({
@@ -1476,7 +1531,7 @@ async function handleSpeak() {
             console.log("❌ Error checking avatar status:", statusError);
           }
         }
-        
+
         console.log("🔄 Avatar truly unavailable, using browser TTS");
         const utterance = new SpeechSynthesisUtterance(finalOutput);
         utterance.lang = 'en-US'; // Set English as default language
@@ -1496,8 +1551,8 @@ async function handleSpeak() {
           </svg>
         `;
       }
-      
-      
+
+
       // Avatar speaking completed
       isAvatarSpeaking = false;
 
@@ -1509,11 +1564,11 @@ async function handleSpeak() {
         name: (error as any).name || 'UnknownError'
       });
       isAvatarSpeaking = false; // Reset speaking flag on error
-      
+
       // Add detailed error message to chat
       const errorMessage = `Sorry, I encountered an error: ${(error as any).message || 'Unknown error'}. Please try again.`;
       addChatMessage(errorMessage, false);
-      
+
       // Try to speak the error message
       if (avatar && sessionActive) {
         try {
@@ -1527,7 +1582,7 @@ async function handleSpeak() {
         // CRITICAL: NO BROWSER TTS - Only avatar should speak
         console.log("❌ Error occurred - NO BROWSER TTS");
         console.log("🔄 Waiting for avatar to become available...");
-        
+
         if (avatarSubtitle) {
           avatarSubtitle.textContent = "Error occurred. Please wait for avatar to reconnect.";
           avatarSubtitle.style.color = "#ff6b6b";
@@ -1537,14 +1592,14 @@ async function handleSpeak() {
         // CRITICAL: NO BROWSER TTS - Only avatar should speak
         console.log("❌ Error occurred - NO BROWSER TTS");
         console.log("🔄 Waiting for avatar to become available...");
-        
+
         if (avatarSubtitle) {
           avatarSubtitle.textContent = "Error occurred. Please wait for avatar to reconnect.";
           avatarSubtitle.style.color = "#ff6b6b";
         }
       }
-      
-    
+
+
     // Avatar speaking completed
     isAvatarSpeaking = false;
       if (speakButton) {
@@ -1555,7 +1610,7 @@ async function handleSpeak() {
         </svg>
         `;
       }
-      
+
       // Ensure we stay in avatar interface even on error
       if (avatarInterface) {
         avatarInterface.style.display = "flex";
@@ -1572,7 +1627,7 @@ async function handleSpeak() {
   } finally {
     // Always reset API call flag
     isApiCallInProgress = false;
-    
+
     // Always re-enable speak button
     if (speakButton) {
       speakButton.disabled = false;
@@ -1588,7 +1643,7 @@ async function handleSpeak() {
 // Force avatar speaking function with explicit configuration
 function forceAvatarSpeak(text: string) {
   console.log("🎤 FORCE SPEAKING:", text);
-  
+
   if (avatar && sessionActive) {
     try {
       console.log("🎤 Attempting force speak with explicit config");
@@ -1604,7 +1659,7 @@ function forceAvatarSpeak(text: string) {
     // CRITICAL: NO BROWSER TTS - Only avatar should speak
     console.log("❌ Avatar not available - NO BROWSER TTS");
     console.log("🔄 Waiting for avatar to become available...");
-    
+
     if (avatarSubtitle) {
       avatarSubtitle.textContent = "Avatar not available. Please wait for avatar to reconnect.";
       avatarSubtitle.style.color = "#ffa500";
@@ -1615,7 +1670,7 @@ function forceAvatarSpeak(text: string) {
     // CRITICAL: NO BROWSER TTS - Only avatar should speak
     console.log("❌ Avatar not available - NO BROWSER TTS");
     console.log("🔄 Waiting for avatar to become available...");
-    
+
     if (avatarSubtitle) {
       avatarSubtitle.textContent = "Avatar not available. Please wait for avatar to reconnect.";
       avatarSubtitle.style.color = "#ffa500";
@@ -1635,10 +1690,10 @@ async function testAPI() {
       headers: { 'Content-Type': 'application/json',  'user-id': 'heygenuser' },
       body: JSON.stringify({ message: "Hello, this is a test message" })
     });
-    
+
     console.log("🧪 API Test Response Status:", response.status);
     console.log("🧪 API Test Response OK:", response.ok);
-    
+
     if (response.ok) {
       const data = await response.json();
       console.log("🧪 API Test Response Data:", data);
@@ -1693,7 +1748,7 @@ function startConnectionHealthMonitoring() {
     }
     console.log("💓 Connection health check...");
   }, 30000);
-  
+
   (window as any).connectionHealthInterval = healthCheckInterval;
 }
 
@@ -1709,7 +1764,7 @@ function startSessionKeepAlive() {
     console.log("💓 Session keep-alive ping...");
     lastStreamActivity = Date.now();
   }, 60000);
-  
+
   (window as any).sessionKeepAliveInterval = keepAliveInterval;
 }
 
@@ -1731,37 +1786,37 @@ function startProactiveSessionRefresh() {
     }
     console.log("🔍 API key validity check...");
   }, 60000);
-  
+
   (window as any).proactiveRefreshInterval = refreshInterval;
 }
 
 // CRITICAL: Refresh session with new API key - with 401 error handling
 async function refreshSessionWithNewApiKey() {
   console.log("🔄 Refreshing session with new API key...");
-  
+
   if (avatarSubtitle) {
     avatarSubtitle.textContent = "Refreshing session with new API key...";
     avatarSubtitle.style.color = "#ffa500";
   }
-  
+
   try {
     // CRITICAL: Get avatar config from global scope
     const avatarConfig = (window as any).avatarConfig;
     if (!avatarConfig) {
       throw new Error("Avatar config not found - cannot refresh session");
     }
-    
+
     // CRITICAL: Stop current session completely
     if (avatar && avatar.stopAvatar) {
       await avatar.stopAvatar();
     }
-    
+
     // CRITICAL: Clear any cached session tokens and prevent reuse
     (window as any).currentStream = null;
     (window as any).deadStreamCount = 0;
     (window as any).sessionTokens = null;
     (window as any).avatarInstances = [];
-    
+
     // CRITICAL: Ensure no multiple avatar instances exist
     if ((window as any).avatarInstances && (window as any).avatarInstances.length > 0) {
       console.log("🧹 Cleaning up existing avatar instances to prevent token reuse...");
@@ -1776,20 +1831,20 @@ async function refreshSessionWithNewApiKey() {
       }
       (window as any).avatarInstances = [];
     }
-    
+
     // Wait for complete cleanup
     await new Promise(resolve => setTimeout(resolve, 3000));
-    
+
     // CRITICAL: Create new session with fresh API key
     console.log("🔄 Creating new session with fresh API key...");
     const newSessionData = await avatar!.createStartAvatar(avatarConfig);
-    
+
     if (newSessionData && videoElement) {
       console.log("✅ Session refreshed with new API key successfully");
       sessionActive = true;
       lastStreamActivity = Date.now();
       (window as any).sessionStartTime = Date.now(); // Reset session start time
-      
+
       if (avatarSubtitle) {
         avatarSubtitle.textContent = "Session refreshed with new API key successfully.";
         avatarSubtitle.style.color = "#10b981";
@@ -1797,36 +1852,36 @@ async function refreshSessionWithNewApiKey() {
     }
   } catch (refreshError) {
     console.log("❌ Session refresh with new API key failed:", refreshError);
-    
+
     // CRITICAL: Check if it's a 401 error (API key invalid)
     if ((refreshError as any).message && (refreshError as any).message.includes('401')) {
       console.log("🔍 401 Unauthorized detected - API key is invalid");
       console.log("🔄 Switching to graceful degradation mode...");
-      
+
       if (avatarSubtitle) {
         avatarSubtitle.textContent = "API key expired. Switching to browser TTS mode for continued interaction.";
         avatarSubtitle.style.color = "#ffa500";
       }
-      
+
       // CRITICAL: Mark API key as invalid to prevent future refresh attempts
       (window as any).apiKeyInvalid = true;
-      
+
       // CRITICAL: Stop all monitoring and refresh attempts
       console.log("🛑 Stopping all monitoring and refresh attempts due to invalid API key...");
-      
+
       // CRITICAL: Set global flag to prevent any monitoring from restarting
       (window as any).allMonitoringStopped = true;
       (window as any).apiKeyInvalid = true;
-      
+
       // CRITICAL: Force stop all monitoring intervals immediately
       const intervalsToStop = [
         'connectionHealthInterval',
-        'streamHealthInterval', 
+        'streamHealthInterval',
         'proactiveRefreshInterval',
         'webRTCStabilityInterval',
         'sessionKeepAliveInterval'
       ];
-      
+
       intervalsToStop.forEach(intervalName => {
         if ((window as any)[intervalName]) {
           clearInterval((window as any)[intervalName]);
@@ -1834,14 +1889,14 @@ async function refreshSessionWithNewApiKey() {
           console.log(`🛑 ${intervalName} stopped`);
         }
       });
-      
+
       // CRITICAL: Clear any pending timeouts
       const timeoutsToClear = [
         'code5RefreshTimeout',
         'sessionRefreshTimeout',
         'streamRecoveryTimeout'
       ];
-      
+
       timeoutsToClear.forEach(timeoutName => {
         if ((window as any)[timeoutName]) {
           clearTimeout((window as any)[timeoutName]);
@@ -1849,27 +1904,27 @@ async function refreshSessionWithNewApiKey() {
           console.log(`🛑 ${timeoutName} cleared`);
         }
       });
-      
+
       // Keep session active but switch to TTS mode
       sessionActive = true;
       lastStreamActivity = Date.now();
-      
+
       // CRITICAL: Ensure session stays interactive for response generation
       console.log("✅ Graceful degradation activated - all monitoring stopped, avatar will use browser TTS");
       console.log("🔄 Session remains interactive for response generation");
-      
+
       // CRITICAL: Update UI to show session is still active
       if (avatarSubtitle) {
         avatarSubtitle.textContent = "Session active with browser TTS. Please continue interacting.";
         avatarSubtitle.style.color = "#10b981";
       }
-      
+
       // CRITICAL: Ensure speak button remains enabled
       if (speakButton) {
         speakButton.disabled = false;
         console.log("✅ Speak button remains enabled for continued interaction");
       }
-      
+
       // CRITICAL: Ensure record button remains enabled
       if (recordButton) {
         recordButton.disabled = false;
@@ -1878,12 +1933,12 @@ async function refreshSessionWithNewApiKey() {
     } else {
       // For other errors, try to keep session interactive
       console.log("🔄 Attempting to keep session interactive despite refresh failure...");
-      
+
       if (avatarSubtitle) {
         avatarSubtitle.textContent = "Session refresh failed, but trying to maintain connection...";
         avatarSubtitle.style.color = "#ffa500";
       }
-      
+
       // Try to keep the session active even if refresh failed
       sessionActive = true;
       lastStreamActivity = Date.now();
@@ -1894,27 +1949,27 @@ async function refreshSessionWithNewApiKey() {
 // CRITICAL: WebRTC Stability Testing and Network Diagnostics
 function startWebRTCStabilityTesting() {
   console.log("🌐 Starting WebRTC stability testing and network diagnostics...");
-  
+
   const stabilityInterval = setInterval(() => {
     if (!sessionActive || !avatar) {
       clearInterval(stabilityInterval);
       return;
     }
-    
+
     // CRITICAL: Stop monitoring if API key is invalid or all monitoring stopped
     if ((window as any).apiKeyInvalid || (window as any).allMonitoringStopped) {
       console.log("🛑 API key invalid or all monitoring stopped - stopping WebRTC stability testing");
       clearInterval(stabilityInterval);
       return;
     }
-    
+
     console.log("🌐 WebRTC stability test...");
-    
+
     // Test WebRTC connection stability
     if (videoElement && videoElement.srcObject) {
       const stream = videoElement.srcObject as MediaStream;
       const tracks = stream.getTracks();
-      
+
       console.log("🌐 WebRTC diagnostics:", {
         totalTracks: tracks.length,
         activeTracks: tracks.filter(t => t.readyState === 'live').length,
@@ -1923,7 +1978,7 @@ function startWebRTCStabilityTesting() {
         connectionState: 'unknown',
         iceConnectionState: 'unknown'
       });
-      
+
       // Test network connectivity
       if (navigator.onLine !== undefined) {
         console.log("🌐 Network status:", {
@@ -1933,30 +1988,30 @@ function startWebRTCStabilityTesting() {
           rtt: (navigator as any).connection?.rtt || 'unknown'
         });
       }
-      
+
       // Test browser WebRTC support
       console.log("🌐 WebRTC support:", {
         getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
         RTCPeerConnection: !!(window as any).RTCPeerConnection,
         WebRTC: !!(window as any).webkitRTCPeerConnection || !!(window as any).RTCPeerConnection
       });
-      
+
       // Test for WebRTC issues that could cause Code 5 disconnections
       if (tracks.length === 0) {
         console.log("⚠️ WebRTC issue: No tracks detected - this could cause Code 5 disconnections");
-        
+
         if (avatarSubtitle) {
           avatarSubtitle.textContent = "WebRTC issue detected. Checking network stability...";
           avatarSubtitle.style.color = "#ffa500";
         }
       }
-      
+
       // Test for network instability
       if ((navigator as any).connection) {
         const connection = (navigator as any).connection;
         if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
           console.log("⚠️ Network issue: Slow connection detected - this could cause Code 5 disconnections");
-          
+
           if (avatarSubtitle) {
             avatarSubtitle.textContent = "Slow network detected. This may cause disconnections.";
             avatarSubtitle.style.color = "#ffa500";
@@ -1964,9 +2019,9 @@ function startWebRTCStabilityTesting() {
         }
       }
     }
-    
+
   }, 30000); // Test every 30 seconds
-  
+
   // Store for cleanup
   (window as any).webRTCStabilityInterval = stabilityInterval;
 }
@@ -1980,46 +2035,46 @@ function handleStreamReady(event: any) {
       active: event.detail?.active,
       tracks: event.detail?.getTracks?.()?.length || 'unknown'
     });
-    
+
     videoElement.srcObject = event.detail;
-    
+
     // Update last activity time
     lastStreamActivity = Date.now();
     console.log("📊 Stream activity updated");
-    
+
     // CRITICAL: Add connection health monitoring
     startConnectionHealthMonitoring();
-    
+
     // CRITICAL: Start session keep-alive to prevent premature termination
     startSessionKeepAlive();
-    
+
     // CRITICAL: Start proactive session refresh to prevent API key expiry
     startProactiveSessionRefresh();
-    
+
     // CRITICAL: Start WebRTC stability testing and network diagnostics
     startWebRTCStabilityTesting();
-    
+
     // CRITICAL: Optimize video properties to prevent stream death
     videoElement.loop = false;
     videoElement.muted = false; // Keep audio enabled for avatar
     videoElement.autoplay = true;
     videoElement.playsInline = true;
-    
+
     // CRITICAL: Add stream stability measures
     videoElement.preload = 'none'; // Don't preload to reduce resource usage
     videoElement.controls = false; // Disable controls to prevent conflicts
-    
+
     // CRITICAL: Prevent stream from being garbage collected
     (window as any).currentStream = event.detail;
-    
+
     // CRITICAL: Monitor stream health to prevent death
     startStreamHealthMonitoring(event.detail);
-    
+
     // Enhanced video event handling for stability
     videoElement.addEventListener('loadstart', () => {
       console.log("📹 Video loading started");
     });
-    
+
     videoElement.addEventListener('canplay', () => {
       console.log("📹 Video can play");
       // Ensure video plays smoothly with retry mechanism
@@ -2037,7 +2092,7 @@ function handleStreamReady(event: any) {
       };
       playVideo();
     });
-    
+
     videoElement.addEventListener('error', (e) => {
       console.error("📹 Video error:", e);
       // Enhanced error recovery
@@ -2048,60 +2103,60 @@ function handleStreamReady(event: any) {
         }
       }, 1000);
     });
-    
+
     // DISABLE stalled event handler - was causing avatar to get stuck
     // videoElement.addEventListener('stalled', () => {
     //   // DISABLED - was interfering with avatar speaking
     // });
-    
+
     videoElement.addEventListener('waiting', () => {
       console.log("📹 Video waiting for data");
       // Show loading indicator
     });
-    
+
     videoElement.addEventListener('playing', () => {
       console.log("📹 Video started playing");
       // Hide loading indicator
     });
-    
+
     // DISABLE pause event handler - was causing avatar to get stuck
     // videoElement.addEventListener('pause', () => {
     //   // DISABLED - was interfering with avatar speaking
     // });
-    
+
     // DISABLE ended event handler - was causing avatar to get stuck
     // videoElement.addEventListener('ended', () => {
     //   // DISABLED - was interfering with avatar speaking
     // });
-    
+
     // DISABLE video health monitoring completely to prevent interference
     // const videoHealthMonitor = setInterval(() => {
     //   // DISABLED - was causing avatar to get stuck
     // }, 20000);
-    
+
     // DISABLED: Keep-alive mechanism was causing 15-second disconnections
     // const keepAliveInterval = setInterval(() => {
     //   if (sessionActive && avatar) {
     //     // Send a ping to keep connection alive
     //     console.log("🏓 Sending keep-alive ping");
-    //     
+    //
     //     // Try to get stream status
     //     if (avatar.getStatus) {
     //       const status = avatar.getStatus();
     //       console.log("📊 Avatar status:", status);
     //     }
-    //     
+    //
     //     // Update last activity
     //     lastStreamActivity = Date.now();
     //   }
     // }, 60000); // Every 60 seconds - EXTENDED from 15 seconds
-    
+
     // DISABLED: Keep-alive interval is disabled
     // (window as any).keepAliveInterval = keepAliveInterval;
-    
+
     // Store the interval ID for cleanup
     (window as any).videoHealthMonitor = null;
-    
+
     videoElement.onloadedmetadata = () => {
       console.log("📹 Video metadata loaded");
       videoElement.play().then(() => {
@@ -2124,7 +2179,7 @@ function handleStreamReady(event: any) {
 // End the avatar session
 async function terminateAvatarSession() {
   if (!avatar || !sessionData) return;
-  
+
   // Prevent termination while API call is in progress
   if (isApiCallInProgress) {
     console.log("⚠️ API call in progress - cannot terminate session safely");
@@ -2132,7 +2187,7 @@ async function terminateAvatarSession() {
       avatarSubtitle.textContent = "Please wait for current request to complete before ending session.";
       avatarSubtitle.style.color = "#ffa500";
     }
-    
+
     // Wait for API call to complete, then retry termination
     const waitForApiCompletion = () => {
       if (!isApiCallInProgress) {
@@ -2143,28 +2198,28 @@ async function terminateAvatarSession() {
         setTimeout(waitForApiCompletion, 1000);
       }
     };
-    
+
     setTimeout(waitForApiCompletion, 1000);
     return;
   }
-  
+
   console.log("🛑 Terminating avatar session...");
-  
+
   // Set session as inactive
   sessionActive = false;
   isInitializing = false;
   isApiCallInProgress = false; // Reset API call flag
   console.log("🎯 Session is now inactive");
-  
+
   // CRITICAL: Stop all TTS immediately
   console.log("🔇 Stopping all TTS...");
-  
+
   // Stop browser speech synthesis
   if ('speechSynthesis' in window) {
     speechSynthesis.cancel();
     console.log("✅ Browser TTS cancelled");
   }
-  
+
   // Stop avatar speaking if possible
   if (avatar) {
     try {
@@ -2173,85 +2228,85 @@ async function terminateAvatarSession() {
       console.log("⚠️ Error stopping avatar speaking:", error);
     }
   }
-  
+
   // Reset speaking flags
   isAvatarSpeaking = false;
   console.log("✅ All TTS stopped");
-  
+
   // ESSENTIAL CLEANUP - Clear all session managers
   console.log("🧹 Essential cleanup - stopping avatar session");
-  
+
   // Clear connection monitor
   if ((window as any).connectionMonitor) {
     clearInterval((window as any).connectionMonitor);
     (window as any).connectionMonitor = null;
   }
-  
+
   // Clear session timeout manager
   if ((window as any).sessionTimeoutManager) {
     clearInterval((window as any).sessionTimeoutManager);
     (window as any).sessionTimeoutManager = null;
   }
-  
+
   // Clear session keep-alive
   if ((window as any).sessionKeepAlive) {
     clearInterval((window as any).sessionKeepAlive);
     (window as any).sessionKeepAlive = null;
   }
-  
+
   // Clear session timeout display
   if ((window as any).sessionTimeoutDisplay) {
     clearInterval((window as any).sessionTimeoutDisplay);
     (window as any).sessionTimeoutDisplay = null;
   }
-  
+
   // Clear session health monitor
   if ((window as any).sessionHealthMonitor) {
     clearInterval((window as any).sessionHealthMonitor);
     (window as any).sessionHealthMonitor = null;
   }
-  
+
   // Clear connection health monitoring
   if ((window as any).connectionHealthInterval) {
     clearInterval((window as any).connectionHealthInterval);
     (window as any).connectionHealthInterval = null;
   }
-  
+
   // Clear session keep-alive
   if ((window as any).sessionKeepAliveInterval) {
     clearInterval((window as any).sessionKeepAliveInterval);
     (window as any).sessionKeepAliveInterval = null;
   }
-  
+
   // Clear stream health monitoring
   if ((window as any).streamHealthInterval) {
     clearInterval((window as any).streamHealthInterval);
     (window as any).streamHealthInterval = null;
   }
-  
+
   // Clear proactive session refresh
   if ((window as any).proactiveRefreshInterval) {
     clearInterval((window as any).proactiveRefreshInterval);
     (window as any).proactiveRefreshInterval = null;
   }
-  
+
   // Clear WebRTC stability testing
   if ((window as any).webRTCStabilityInterval) {
     clearInterval((window as any).webRTCStabilityInterval);
     (window as any).webRTCStabilityInterval = null;
   }
-  
+
   // Simple cleanup without complex monitoring
   console.log("✅ Simple cleanup completed");
 
   await avatar.stopAvatar();
   videoElement.srcObject = null;
   avatar = null;
-  
+
   // Hide avatar interface and show welcome screen
   avatarInterface.style.display = "none";
   welcomeScreen.style.display = "flex";
-  
+
   // Reset UI elements
   userInput.value = "";
   speakButton.disabled = false;
@@ -2262,7 +2317,7 @@ async function terminateAvatarSession() {
     </svg>
     <span>Send</span>
   `;
-  
+
   // Reset recording state
   if (isRecording && voiceRecorder) {
     voiceRecorder.stopRecording();
@@ -2277,7 +2332,7 @@ async function terminateAvatarSession() {
   if (recordingStatus) {
     recordingStatus.textContent = "";
   }
-  
+
   // Re-enable get started button
   getStartedBtn.disabled = false;
   getStartedBtn.innerHTML = '<span>Get Started</span><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -2345,6 +2400,10 @@ if (textInputBtn) {
     if (avatarMainContent) {
       avatarMainContent.classList.add("chat-open");
     }
+    // Add chat-active class to video section for flexible sizing
+    if (avatarVideoSection) {
+      avatarVideoSection.classList.add("chat-active");
+    }
     // Show text input area but keep voice button visible
     if (textInputArea) {
       textInputArea.style.display = "flex";
@@ -2369,16 +2428,16 @@ if (textInputBtn) {
 if (recordButton) {
   // Mobile detection
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
+
   if (isMobile) {
     // Mobile: Use touch events for "Hold to Speak" functionality
     let isTouchRecording = false;
-    
+
     recordButton.addEventListener("touchstart", (e) => {
       e.preventDefault();
       console.log("🎤 Touch start - beginning recording");
       isTouchRecording = true;
-      
+
       // Close chat sidebar when voice is selected
       if (chatSidebar) {
         chatSidebar.classList.remove("open");
@@ -2391,43 +2450,43 @@ if (recordButton) {
       if (textInputArea) {
         textInputArea.style.display = "none";
       }
-      
+
       // Start recording
       if (!isRecording) {
         toggleRecording();
       }
     });
-    
+
     recordButton.addEventListener("touchend", (e) => {
       e.preventDefault();
       console.log("🎤 Touch end - stopping recording");
-      
+
       if (isTouchRecording && isRecording) {
         toggleRecording();
       }
       isTouchRecording = false;
     });
-    
+
     recordButton.addEventListener("touchcancel", (e) => {
       e.preventDefault();
       console.log("🎤 Touch cancel - stopping recording");
-      
+
       if (isTouchRecording && isRecording) {
         toggleRecording();
       }
       isTouchRecording = false;
     });
-    
+
     // Prevent context menu on long press
     recordButton.addEventListener("contextmenu", (e) => {
       e.preventDefault();
     });
-    
+
   } else {
     // Desktop: Use click events for toggle functionality
     recordButton.addEventListener("click", () => {
       console.log("🎤 Voice button clicked");
-      
+
       // Close chat sidebar when voice is selected
       if (chatSidebar) {
         chatSidebar.classList.remove("open");
@@ -2444,7 +2503,7 @@ if (recordButton) {
       if (recordButton) {
         recordButton.style.display = "flex";
       }
-      
+
       // Handle recording with click (toggle on/off)
       toggleRecording();
     });
@@ -2475,6 +2534,10 @@ if (closeChatBtn && chatSidebar) {
     if (avatarMainContent) {
       avatarMainContent.classList.remove("chat-open");
     }
+    // Remove chat-active class from video section for flexible sizing
+    if (avatarVideoSection) {
+      avatarVideoSection.classList.remove("chat-active");
+    }
     console.log("Chat closed - avatar full screen");
   });
 }
@@ -2502,15 +2565,15 @@ function addChatMessage(message: string, isUser: boolean = false) {
   if (chatMessages) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `chat-message ${isUser ? 'user-message' : 'bot-message'}`;
-    
+
     const now = new Date();
     const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
+
     messageDiv.innerHTML = `
       <div class="message-content">${message}</div>
       <div class="message-time">${timeString}</div>
     `;
-    
+
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
@@ -2531,13 +2594,13 @@ function ensureInputEnabled() {
 // Stop all TTS when page is unloaded
 function stopAllTTS() {
   console.log("🔇 Page unloading - stopping all TTS...");
-  
+
   // Stop browser speech synthesis
   if ('speechSynthesis' in window) {
     speechSynthesis.cancel();
     console.log("✅ Browser TTS cancelled on page unload");
   }
-  
+
   // Stop avatar speaking if possible
   if (avatar) {
     try {
@@ -2546,7 +2609,7 @@ function stopAllTTS() {
       console.log("⚠️ Error stopping avatar speaking on page unload:", error);
     }
   }
-  
+
   // Reset all flags
   isAvatarSpeaking = false;
   isApiCallInProgress = false;
@@ -2569,6 +2632,10 @@ if (chatBtn) {
     // Make avatar smaller when chat is open
     if (avatarMainContent) {
       avatarMainContent.classList.add("chat-open");
+    }
+    // Add chat-active class to video section for flexible sizing
+    if (avatarVideoSection) {
+      avatarVideoSection.classList.add("chat-active");
     }
     // Show text input area
     if (textInputArea) {

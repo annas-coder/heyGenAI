@@ -53,7 +53,7 @@
         right: 0;
         z-index: 100;
       }
-      
+
       .logo-container {
         display: flex;
         align-items: center;
@@ -91,7 +91,7 @@
       .video-container::before {
         display: none;
       }
-      
+
       .icon-btn {
         width: 60px;
         height: 60px;
@@ -122,7 +122,7 @@
       .icon-btn:hover::before {
         transform: scale(1);
       }
-      
+
       .icon-btn:hover:not(:disabled) {
         transform: scale(1.15) rotate(5deg);
         box-shadow: 0 8px 25px rgba(30, 64, 175, 0.4);
@@ -131,25 +131,25 @@
       .icon-btn:active:not(:disabled) {
         transform: scale(1.05);
       }
-      
+
       .icon-btn:disabled {
         opacity: 0.3;
         cursor: not-allowed;
         filter: grayscale(0.5);
       }
-      
+
       #startSession {
         background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
         color: white;
         box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);
       }
-      
+
       #endSession {
         background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
         color: white;
         box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
       }
-      
+
       #speakButton {
         background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
         color: white;
@@ -202,7 +202,7 @@
       #userInput::placeholder {
         color: #9ca3af;
       }
-      
+
       .session-controls {
         display: flex;
         gap: 1.5rem;
@@ -1389,11 +1389,11 @@
       }
 
       @keyframes recordingPulse {
-        0%, 100% { 
+        0%, 100% {
           transform: translateX(-50%) scale(1);
           box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
         }
-        50% { 
+        50% {
           transform: translateX(-50%) scale(1.05);
           box-shadow: 0 6px 25px rgba(239, 68, 68, 0.6);
         }
@@ -1414,32 +1414,322 @@
         .avatar-main-content {
           flex-direction: column;
         }
-        
+
         .chat-sidebar {
           width: 100%;
           height: 200px;
           border-left: none;
           border-top: 1px solid rgba(255, 255, 255, 0.2);
         }
-        
+
         .avatar-bottom-bar {
           flex-direction: column;
           gap: 1rem;
           padding: 1rem;
         }
-        
+
         .interaction-controls {
           gap: 1rem;
         }
-        
+
         .control-btn {
           padding: 0.5rem 1rem;
           font-size: 0.8rem;
         }
-        
+
         .text-input-area {
           max-width: 100%;
         }
+      }
+
+      /* ===== MOBILE OPTIMIZATION STYLES ===== */
+
+      /* Safe Area Insets for iOS */
+      .avatar-interface {
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+
+      /* Toast Notification System */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        padding: 12px 24px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 10000;
+        max-width: 90%;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      .toast.toast-error {
+        background: rgba(220, 38, 38, 0.95);
+      }
+
+      .toast.toast-success {
+        background: rgba(16, 185, 129, 0.95);
+      }
+
+      .toast.toast-info {
+        background: rgba(59, 130, 246, 0.95);
+      }
+
+      /* Button Labels for Mobile */
+      .btn-label {
+        display: none;
+        font-size: 10px;
+        margin-top: 4px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Flexible Video Sizing */
+      .avatar-video-section {
+        transition: height 0.3s ease;
+      }
+
+      .avatar-video-section.chat-active {
+        height: 60vh;
+      }
+
+      /* Mobile-Specific Styles (≤768px) */
+      @media (max-width: 768px) {
+        /* Button Labels - Always Visible on Mobile */
+        .control-btn-small {
+          flex-direction: column;
+          gap: 4px;
+          padding: 8px;
+        }
+
+        .btn-label {
+          display: block;
+        }
+
+        /* Chat Sidebar Push Behavior */
+        .avatar-main-content {
+          flex-direction: column;
+          transition: all 0.3s ease;
+        }
+
+        .chat-sidebar {
+          position: relative;
+          width: 100%;
+          height: 0;
+          transform: none;
+          transition: height 0.3s ease;
+          border-left: none;
+          border-top: 1px solid #e5e7eb;
+          overflow: hidden;
+        }
+
+        .chat-sidebar.open {
+          height: 40vh;
+        }
+
+        .avatar-video-section.chat-active {
+          height: 60vh;
+          flex-shrink: 0;
+        }
+
+        /* Touch Target Improvements */
+        .chat-input-area input {
+          padding: 1rem 1.25rem;
+          font-size: 16px; /* Prevents zoom on iOS */
+        }
+
+        .chat-message {
+          padding: 0.5rem 0;
+        }
+
+        .message-content {
+          padding: 1rem 1.25rem;
+          font-size: 15px;
+        }
+
+        /* Welcome Screen Mobile Optimization */
+        .welcome-title {
+          font-size: 2rem;
+        }
+
+        .welcome-subtitle {
+          font-size: 1rem;
+          max-width: 90%;
+        }
+
+        .feature-highlights {
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        /* Control Buttons Spacing */
+        .control-buttons {
+          gap: 10px;
+          bottom: 15px;
+          right: 15px;
+        }
+
+        /* Bottom Bar Adjustments */
+        .avatar-bottom-bar {
+          padding: 1rem 1.5rem;
+          min-height: 60px;
+        }
+
+        /* Toast Positioning for Mobile */
+        .toast {
+          bottom: calc(20px + env(safe-area-inset-bottom));
+          max-width: 85%;
+        }
+      }
+
+      /* iPhone Pro Max Specific (≤428px) */
+      @media (max-width: 428px) {
+        /* Adaptive Button Sizing - Medium-Large */
+        .control-btn-small {
+          width: 52px;
+          height: 52px;
+          font-size: 16px;
+        }
+
+        .control-btn-small i {
+          font-size: 16px;
+        }
+
+        /* Optimized Spacing */
+        .control-buttons {
+          gap: 8px;
+        }
+      }
+
+      /* Small Phones (≤375px) - Larger Buttons */
+      @media (max-width: 375px) {
+        .control-btn-small {
+          width: 56px;
+          height: 56px;
+          font-size: 18px;
+        }
+
+        .control-btn-small i {
+          font-size: 18px;
+        }
+
+        .btn-label {
+          font-size: 9px;
+        }
+      }
+
+      /* Tablets (769px - 1024px) */
+      @media (min-width: 769px) and (max-width: 1024px) {
+        .control-btn-small {
+          width: 48px;
+          height: 48px;
+        }
+
+        .chat-sidebar {
+          width: 320px;
+        }
+
+        .avatar-video-section.chat-active {
+          height: 70vh;
+        }
+
+        .chat-sidebar.open {
+          height: 30vh;
+        }
+      }
+
+      /* Landscape Mobile Optimization */
+      @media (orientation: landscape) and (max-height: 430px) {
+        .avatar-interface {
+          flex-direction: row;
+        }
+
+        .avatar-main-content {
+          flex-direction: row !important;
+          height: 100vh;
+        }
+
+        .avatar-video-section {
+          width: 70%;
+          height: 100vh !important;
+          flex-shrink: 0;
+        }
+
+        .avatar-video-section.chat-active {
+          width: 70%;
+          height: 100vh !important;
+        }
+
+        .chat-sidebar {
+          width: 0;
+          height: 100vh !important;
+          position: relative;
+          transform: none;
+          border-left: 1px solid #e5e7eb;
+          border-top: none;
+          transition: width 0.3s ease;
+        }
+
+        .chat-sidebar.open {
+          width: 30%;
+          height: 100vh !important;
+        }
+
+        /* Adjust controls for landscape */
+        .control-buttons {
+          flex-direction: column;
+          right: 10px;
+          bottom: 50%;
+          transform: translateY(50%);
+          gap: 12px;
+        }
+
+        /* Welcome screen landscape */
+        .welcome-content {
+          padding: 1rem 2rem;
+        }
+
+        .welcome-title {
+          font-size: 2.5rem;
+        }
+
+        .feature-highlights {
+          flex-direction: row;
+        }
+
+        /* Bottom bar in landscape */
+        .avatar-bottom-bar {
+          flex-direction: row;
+          padding: 0.75rem 1.5rem;
+          min-height: 50px;
+        }
+      }
+
+      /* Desktop - Hide Button Labels */
+      @media (min-width: 769px) {
+        .btn-label {
+          display: none;
+        }
+      }
+
+      /* Keyboard Open State - Applied via JavaScript */
+      .avatar-video-section.keyboard-open {
+        height: 40vh !important;
+        transition: height 0.2s ease;
       }
     </style>
   </head>
@@ -1497,23 +1787,26 @@
           <div class="video-container">
             <video id="avatarVideo" autoplay playsinline></video>
           </div>
-          
+
           <!-- Current Subtitle -->
           <!-- <div class="current-subtitle" id="avatarSubtitle">
             Hi! How can I assist you today?
           </div> -->
-          
-          
+
+
           <!-- Three Control Buttons -->
           <div class="control-buttons">
             <button class="control-btn-small" id="chatBtn" title="Chat">
               <i class="fas fa-comments"></i>
+              <span class="btn-label">Chat</span>
             </button>
             <button class="control-btn-small" id="micBtn" title="Microphone">
               <i class="fas fa-microphone"></i>
+              <span class="btn-label">Voice</span>
             </button>
             <button class="control-btn-small" id="endSessionBtn" title="End Session">
               <i class="fas fa-times"></i>
+              <span class="btn-label">End</span>
             </button>
           </div>
         </div>
@@ -1536,7 +1829,7 @@
               <div class="message-time">Just now</div>
             </div>
           </div>
-          
+
           <!-- Text Input Area - Now inside chat sidebar -->
           <div class="chat-input-area" id="textInputArea" style="display: none;">
             <input type="text" id="userInput" placeholder="Type your message..." />
