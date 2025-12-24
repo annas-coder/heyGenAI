@@ -21,14 +21,14 @@
     <title>Twintik Avatar Experience</title>
     <style>
       :root {
-        --color-primary-start: #7C3AED;
-        --color-primary-end: #3B82F6;
-        --color-accent: #FB923C;
-        --color-text-dark: #1E293B;
-        --color-text-light: #64748B;
-        --color-bg-gradient-start: #F8FAFC;
-        --color-bg-gradient-mid: #EEF2FF;
-        --color-bg-gradient-end: #FCE7F3;
+        --color-primary-start: #17B9A4;
+        --color-primary-end: #14A391;
+        --color-accent: #17B9A4;
+        --color-text-dark: #1A1D3D;
+        --color-text-light: #2C3E50;
+        --color-bg-gradient-start: #E8F6F4;
+        --color-bg-gradient-mid: #C9EBE7;
+        --color-bg-gradient-end: #C9EBE7;
       }
 
       /* Keyframe Animations */
@@ -526,7 +526,7 @@
         min-height: 100vh;
         padding: 0;
         padding-bottom: 80px;
-        background: linear-gradient(135deg, #F8F9FA 0%, #E3E8EF 100%);
+        background: linear-gradient(135deg, #E8F6F4 0%, #C9EBE7 100%);
         position: relative;
         box-sizing: border-box;
         width: 100%;
@@ -548,16 +548,10 @@
         flex: 1;
       }
 
-      .welcome-icon {
-        font-size: 5rem;
-        margin-bottom: 1.5rem;
-        animation: bounce 2s infinite;
-      }
-
       .welcome-title {
         font-size: 3rem;
         font-weight: 800;
-        color: #1E293B;
+        color: #1A1D3D;
         margin-bottom: 1rem;
         letter-spacing: -0.02em;
         line-height: 1.2;
@@ -565,8 +559,8 @@
 
       .welcome-subtitle {
         font-size: 1.125rem;
-        color: #64748B;
-        line-height: 1.6;
+        color: #2C3E50;
+        line-height: 1.7;
         font-weight: 400;
         max-width: 650px;
         margin: 0 auto 2rem;
@@ -593,10 +587,10 @@
         display: flex;
         align-items: center;
         gap: 0.375rem;
-        padding: 0.5rem 0.875rem;
+        padding: 0.625rem 1rem;
         background: white;
         border-radius: 8px;
-        border: 1px solid #E5E7EB;
+        border: 2px solid #17B9A4;
         transition: all 0.3s ease;
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
         white-space: nowrap;
@@ -604,8 +598,9 @@
 
       .feature-item:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        border-color: #3B82F6;
+        box-shadow: 0 4px 12px rgba(23, 185, 164, 0.2);
+        background: #17B9A4;
+        color: white;
       }
 
       .feature-icon {
@@ -619,25 +614,25 @@
       }
 
       .get-started-btn {
-        background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+        background: #17B9A4;
         color: white;
         border: none;
-        border-radius: 12px;
-        padding: 1.125rem 2.5rem;
+        border-radius: 50px;
+        padding: 1.25rem 2.75rem;
         font-size: 1.125rem;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         gap: 0.75rem;
-        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+        box-shadow: 0 8px 24px rgba(23, 185, 164, 0.35);
         transition: all 0.3s ease;
       }
 
       .get-started-btn:hover {
         transform: translateY(-3px);
-        box-shadow: 0 12px 32px rgba(59, 130, 246, 0.4);
-        background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+        box-shadow: 0 12px 32px rgba(23, 185, 164, 0.45);
+        background: #14A391;
       }
 
       .get-started-btn:active {
@@ -1062,48 +1057,48 @@
         font-size: 1.25rem;
       }
 
-      /* Chat button - White with blue icon */
+      /* Chat button - White with teal icon */
       .control-btn-small:nth-child(1) {
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
-        border: 2px solid rgba(59, 130, 246, 0.3);
+        border: 2px solid rgba(23, 185, 164, 0.3);
       }
 
       .control-btn-small:nth-child(1) i {
-        color: #3B82F6;
+        color: #17B9A4;
       }
 
       .control-btn-small:nth-child(1):hover {
         background: rgba(255, 255, 255, 1);
-        border-color: #3B82F6;
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+        border-color: #17B9A4;
+        box-shadow: 0 6px 20px rgba(23, 185, 164, 0.3);
         transform: scale(1.1);
       }
 
       .control-btn-small:nth-child(1):hover i {
-        color: #2563EB;
+        color: #14A391;
       }
 
-      /* Mic button - White with red icon */
+      /* Mic button - White with navy icon */
       .control-btn-small:nth-child(2) {
         background: rgba(255, 255, 255, 0.95);
         backdrop-filter: blur(10px);
-        border: 2px solid rgba(239, 68, 68, 0.3);
+        border: 2px solid rgba(26, 29, 61, 0.3);
       }
 
       .control-btn-small:nth-child(2) i {
-        color: #EF4444;
+        color: #1A1D3D;
       }
 
       .control-btn-small:nth-child(2):hover {
         background: rgba(255, 255, 255, 1);
-        border-color: #EF4444;
-        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+        border-color: #1A1D3D;
+        box-shadow: 0 6px 20px rgba(26, 29, 61, 0.3);
         transform: scale(1.1);
       }
 
       .control-btn-small:nth-child(2):hover i {
-        color: #DC2626;
+        color: #0D0F1F;
       }
 
       /* End button - White with gray icon */
@@ -1163,21 +1158,21 @@
 
       /* Specific button icon styling */
       #chatBtn i {
-        color: #3b82f6;
+        color: #17B9A4;
       }
 
       #micBtn i {
-        color: #ef4444; /* red to stand out on the background */
+        color: #1A1D3D; /* navy to match Twintik brand */
       }
 
       #endSessionBtn i {
-        color: #ef4444;
+        color: #6B7280;
       }
 
       /* Hover effects for each button */
       #chatBtn:hover {
-        background: rgba(59, 130, 246, 0.3);
-        border-color: rgba(59, 130, 246, 0.5);
+        background: rgba(23, 185, 164, 0.3);
+        border-color: rgba(23, 185, 164, 0.5);
       }
 
       #micBtn:hover {
@@ -1594,7 +1589,7 @@
 
       .chat-bubble-header {
         padding: 1rem 1.5rem;
-        background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+        background: #17B9A4;
         color: white;
         display: flex;
         justify-content: space-between;
@@ -2149,11 +2144,6 @@
           margin: 1rem auto;
         }
 
-        .welcome-icon {
-          font-size: 4rem;
-          margin-bottom: 1.5rem;
-        }
-
         .welcome-title {
           font-size: 2.25rem;
           line-height: 1.2;
@@ -2527,21 +2517,17 @@
     <!-- Welcome Screen -->
     <div id="welcomeScreen" class="welcome-screen">
       <div class="welcome-content">
-        <div class="welcome-icon">🤖</div>
-        <h1 class="welcome-title">Welcome to the Twintik Avatar Experience!</h1>
-        <p class="welcome-subtitle">Meet Sandeep, Director of TechnoCIT, to answer your questions about us. Experience the future of human-AI interaction with our advanced avatar capabilities and interact with our intelligent virtual assistant.</p>
+        <h1 class="welcome-title">Experience Twintik's AI Avatar</h1>
+        <p class="welcome-subtitle">Sandeep, Director of TechnoCIT, is here to help through his AI avatar. Ask anything about our services, anytime.</p>
         <div class="feature-highlights">
           <div class="feature-item">
-            <div class="feature-icon">🎯</div>
-            <span>Smart Conversations</span>
+            <span>Available 24/7</span>
           </div>
           <div class="feature-item">
-            <div class="feature-icon">⚡</div>
-            <span>Real-time Responses</span>
+            <span>Instant Answers</span>
           </div>
           <div class="feature-item">
-            <div class="feature-icon">🔒</div>
-            <span>Secure & Private</span>
+            <span>100% Confidential</span>
           </div>
         </div>
         <button id="getStartedBtn" class="get-started-btn">
