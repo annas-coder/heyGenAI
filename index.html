@@ -15,8 +15,231 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <title>Interactive Avatar Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Twintik Avatar Experience</title>
     <style>
+      :root {
+        --color-primary-start: #17B9A4;
+        --color-primary-end: #14A391;
+        --color-accent: #17B9A4;
+        --color-text-dark: #1A1D3D;
+        --color-text-light: #2C3E50;
+        --color-bg-gradient-start: #E8F6F4;
+        --color-bg-gradient-mid: #C9EBE7;
+        --color-bg-gradient-end: #C9EBE7;
+
+        /* Enchanting Canvas Design System */
+        --background: hsl(168, 35%, 96%);
+        --foreground: hsl(210, 50%, 15%);
+        --primary: hsl(168, 76%, 36%);
+        --primary-foreground: hsl(0, 0%, 100%);
+        --muted-foreground: hsl(210, 20%, 45%);
+        --border: hsl(168, 25%, 85%);
+
+        /* Custom Effects */
+        --shadow-glow: 0 0 60px hsl(168 76% 36% / 0.3);
+        --shadow-card: 0 8px 32px hsl(210 50% 15% / 0.08);
+        --shadow-elevated: 0 20px 60px hsl(210 50% 15% / 0.12);
+        --gradient-primary: linear-gradient(135deg, hsl(168, 76%, 36%) 0%, hsl(180, 60%, 45%) 100%);
+      }
+
+      /* Keyframe Animations */
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes float {
+        0%, 100% {
+          transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-20px) rotate(2deg);
+        }
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes pulseGlow {
+        0%, 100% {
+          box-shadow: 0 0 20px hsl(168 76% 36% / 0.4), 0 0 40px hsl(168 76% 36% / 0.2);
+        }
+        50% {
+          box-shadow: 0 0 40px hsl(168 76% 36% / 0.6), 0 0 80px hsl(168 76% 36% / 0.3);
+        }
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.8;
+          transform: scale(1.05);
+        }
+      }
+
+      @keyframes micPulse {
+        0%, 100% {
+          transform: scale(1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        50% {
+          transform: scale(1.1);
+          box-shadow: 0 6px 24px rgba(239, 68, 68, 0.6);
+        }
+      }
+
+      @keyframes gradient-shift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      @keyframes bounce {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: -1000px 0;
+        }
+        100% {
+          background-position: 1000px 0;
+        }
+      }
+
+      @keyframes slideInFromBottom {
+        from {
+          opacity: 0;
+          transform: translateY(50px) scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes scaleIn {
+        from {
+          opacity: 0;
+          transform: scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* Respect reduced motion preferences */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+      /* Global Micro-interactions */
+      button, a, input, select {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      button:active {
+        transform: scale(0.97);
+      }
+
+      /* Focus states for accessibility */
+      *:focus-visible {
+        outline: 3px solid var(--color-primary-start);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      /* Smooth scrolling */
+      html {
+        scroll-behavior: smooth;
+      }
+
+      /* Selection color */
+      ::selection {
+        background: var(--color-primary-start);
+        color: white;
+      }
+
+      /* Performance optimizations - Hardware acceleration */
+      .welcome-content,
+      .chat-bubble-window,
+      .control-btn-small,
+      .get-started-btn,
+      .feature-item {
+        will-change: transform;
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+      }
+
+      /* Optimize animations for performance */
+      @media (hover: hover) and (pointer: fine) {
+        button:hover,
+        .feature-item:hover {
+          will-change: transform;
+        }
+      }
+
+      /* Skip animations on low-end devices */
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation-play-state: paused !important;
+          transition: none !important;
+        }
+      }
+
+      /* High contrast mode support */
+      @media (prefers-contrast: high) {
+        .welcome-content,
+        .chat-bubble-window {
+          border: 3px solid currentColor;
+        }
+      }
+
+      /* Dark mode preferences (future-proofing) */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: linear-gradient(135deg, #1E293B 0%, #334155 50%, #475569 100%);
+        }
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -24,26 +247,138 @@
       }
 
       html {
-        width: 100vw;
-        height: 100vh;
-        overflow: hidden;
+        width: 100%;
+        height: 100%;
+        overflow-x: hidden;
+        overflow-y: auto;
       }
 
       body {
-        background: #ffffff;
-        height: 100vh;
-        width: 100vw;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background: linear-gradient(135deg, var(--color-bg-gradient-start) 0%, var(--color-bg-gradient-mid) 50%, var(--color-bg-gradient-end) 100%);
+        min-height: 100vh;
+        width: 100%;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         margin: 0;
         padding: 0;
         line-height: 1.6;
-        overflow: hidden;
+        overflow-x: hidden;
         box-sizing: border-box;
+        color: var(--color-text-dark);
+      }
+
+      /* Floating Orbs */
+      .floating-orb {
+        position: absolute;
+        border-radius: 50%;
+        background: var(--primary);
+        opacity: 0.2;
+        filter: blur(80px);
+        pointer-events: none;
+        animation: float 8s ease-in-out infinite;
+      }
+
+      .orb-1 {
+        width: 384px;
+        height: 384px;
+        top: 0;
+        left: -192px;
+        opacity: 0.3;
+        animation-delay: 0s;
+      }
+
+      .orb-2 {
+        width: 320px;
+        height: 320px;
+        top: 80px;
+        right: -160px;
+        opacity: 0.25;
+        animation-delay: 2s;
+      }
+
+      .orb-3 {
+        width: 256px;
+        height: 256px;
+        bottom: 80px;
+        left: 25%;
+        opacity: 0.2;
+        animation-delay: 4s;
+      }
+
+      .orb-4 {
+        width: 192px;
+        height: 192px;
+        bottom: 160px;
+        right: 33%;
+        opacity: 0.15;
+        animation-delay: 3s;
+      }
+
+      /* Grid Pattern Overlay */
+      .grid-pattern {
+        position: absolute;
+        inset: 0;
+        opacity: 0.03;
+        pointer-events: none;
+        background-image:
+          linear-gradient(var(--foreground) 1px, transparent 1px),
+          linear-gradient(90deg, var(--foreground) 1px, transparent 1px);
+        background-size: 60px 60px;
+      }
+
+      /* Glassmorphism Effects */
+      .glass {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+      }
+
+      .glass-strong {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+
+      /* Text Gradient */
+      .text-gradient {
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 200% 200%;
+      }
+
+      /* Animation Classes */
+      .animate-fade-up {
+        animation: fadeUp 0.8s ease-out forwards;
+      }
+
+      .animate-fade-up-delayed {
+        animation: fadeUp 0.8s ease-out forwards;
+        animation-delay: 0.2s;
+        opacity: 0;
+      }
+
+      .animate-fade-up-delayed-2 {
+        animation: fadeUp 0.8s ease-out forwards;
+        animation-delay: 0.4s;
+        opacity: 0;
+      }
+
+      .animate-fade-up-delayed-3 {
+        animation: fadeUp 0.8s ease-out forwards;
+        animation-delay: 0.6s;
+        opacity: 0;
+      }
+
+      .animate-float {
+        animation: float 6s ease-in-out infinite;
       }
 
       .header-bar {
         display: flex;
-        justify-content: flex-start;
+        justify-content: space-between;
         align-items: center;
         padding: 1.5rem 2rem;
         background: transparent;
@@ -52,12 +387,32 @@
         left: 0;
         right: 0;
         z-index: 100;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
       }
 
       .logo-container {
         display: flex;
         align-items: center;
         gap: 0.75rem;
+      }
+
+      .logo-text {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }
+
+      .logo-text .twin {
+        color: var(--foreground);
+      }
+
+      .logo-text .tik {
+        background: var(--gradient-primary);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
       }
 
       .twintik-logo {
@@ -68,6 +423,79 @@
 
       .twintik-logo:hover {
         transform: scale(1.05);
+      }
+
+      .technocit-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        transition: all 0.3s ease;
+      }
+
+      .technocit-badge:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-card);
+      }
+
+      .badge-label {
+        font-size: 0.875rem;
+        color: var(--muted-foreground);
+        margin-right: 0.5rem;
+      }
+
+      .badge-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(23, 185, 164, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+
+      .badge-icon::after {
+        content: '';
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid var(--primary);
+        border-top-color: transparent;
+        animation: spin 3s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .badge-name {
+        font-weight: 500;
+        color: var(--foreground);
+      }
+
+      .technocit-logo {
+        height: 32px;
+        width: auto;
+        transition: transform 0.3s ease;
+      }
+
+      .technocit-logo:hover {
+        transform: scale(1.05);
+      }
+
+      .technocit-logo-link {
+        display: inline-block;
+        text-decoration: none;
+        border: none;
+        outline: none;
       }
 
 
@@ -310,158 +738,217 @@
       .welcome-screen {
         display: flex;
         flex-direction: column;
-        height: 100vh;
+        min-height: 100vh;
         padding: 0;
-        background: #ffffff;
+        background: linear-gradient(135deg, #E8F6F4 0%, #C9EBE7 100%);
         position: relative;
         box-sizing: border-box;
-        width: 100vw;
+        width: 100%;
         margin: 0;
         overflow: hidden;
       }
 
-
       .welcome-content {
         text-align: center;
         width: 100%;
-        height: 100%;
-        animation: fadeInUp 0.8s ease;
-        background: #ffffff;
-        padding: 2rem;
+        max-width: 1200px;
+        padding: 10rem 3rem 6rem 3rem;
         position: relative;
-        overflow: hidden;
-        margin: 0;
         z-index: 10;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
+        margin: auto;
+        flex: 1;
       }
 
-
-      .welcome-icon {
-        font-size: 5rem;
-        margin-bottom: 2rem;
-        animation: bounce 2s infinite;
-        display: flex;
-        justify-content: center;
+      /* AI Badge */
+      .ai-badge {
+        display: inline-flex;
         align-items: center;
-        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        padding: 0.625rem 1.25rem;
+        border-radius: 9999px;
+        margin-bottom: 2.5rem;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        color: var(--foreground);
+      }
+
+      .ai-badge i {
+        color: var(--primary);
+        font-size: 1.125rem;
       }
 
       .welcome-title {
-        font-size: 3rem;
-        font-weight: 800;
-        color: #0f172a;
-        margin-bottom: 1rem;
-        text-shadow: none;
-        letter-spacing: -0.02em;
-        line-height: 1.1;
+        font-size: 4.5rem;
+        font-weight: 700;
+        color: #1A1D3D;
+        margin-bottom: 2rem;
+        letter-spacing: -0.025em;
+        line-height: 1.15;
+      }
+
+      .title-highlight {
+        position: relative;
+        display: inline-block;
+      }
+
+      .title-underline {
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        width: 100%;
+        height: 14px;
+      }
+
+      .title-underline path {
+        stroke: var(--primary);
+        stroke-width: 3;
+        stroke-linecap: round;
+        opacity: 0.4;
       }
 
       .welcome-subtitle {
-        font-size: 1.125rem;
-        color: #64748b;
-        line-height: 1.6;
-        text-shadow: none;
+        font-size: 1.375rem;
+        color: #2C3E50;
+        line-height: 1.75;
         font-weight: 400;
-        /* Constrain width and center as a small grid under the title */
-        max-width: 780px;
-        margin: 0.75rem auto 2rem; /* a bit below the title */
-        display: grid;
-        place-items: center;
-        text-align: center;
+        max-width: 850px;
+        margin: 0 auto 4rem;
+      }
+
+      .subtitle-highlight {
+        font-weight: 600;
+        color: var(--foreground);
       }
 
       .feature-highlights {
-        display: flex;
-        justify-content: center;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
         gap: 1.5rem;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
+        margin-bottom: 4rem;
+        max-width: 100%;
+        width: 100%;
       }
 
-      .feature-item {
+      .feature-card {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 1.25rem;
+        padding: 2rem;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: default;
+        text-align: left;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-elevated);
+      }
+
+      .feature-card-header {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.25rem;
-        background: rgba(255, 255, 255, 0.5);
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
-      }
-
-      .feature-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-        background: rgba(255, 255, 255, 0.8);
+        gap: 1.25rem;
+        margin-bottom: 1rem;
       }
 
       .feature-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 1rem;
+        background: rgba(23, 185, 164, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: var(--primary);
         font-size: 1.5rem;
+        transition: all 0.3s ease;
       }
 
-      .feature-item span {
-        font-size: 0.95rem;
-        font-weight: 500;
-        color: #374151;
+      .feature-card:hover .feature-icon {
+        background: var(--primary);
+        color: white;
+        transform: scale(1.05);
+      }
+
+      .feature-card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--foreground);
+        line-height: 1.3;
+      }
+
+      .feature-card-description {
+        color: var(--muted-foreground);
+        font-size: 0.9375rem;
+        line-height: 1.7;
+        margin-left: 76px;
+      }
+
+      .cta-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.25rem;
       }
 
       .get-started-btn {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        background: var(--primary);
         color: white;
         border: none;
-        border-radius: 16px;
-        padding: 1.25rem 3rem;
+        border-radius: 9999px;
+        padding: 1.125rem 3rem;
         font-size: 1.125rem;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 0.75rem;
-        box-shadow: 0 8px 30px rgba(59, 130, 246, 0.25);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        text-transform: none;
-        letter-spacing: 0.3px;
-        border: 2px solid transparent;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .get-started-btn::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s;
-      }
-
-      .get-started-btn:hover::before {
-        left: 100%;
+        gap: 0.875rem;
+        box-shadow: var(--shadow-glow);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       .get-started-btn:hover {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 12px 40px rgba(59, 130, 246, 0.35);
-        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        transform: scale(1.02);
+        box-shadow: var(--shadow-elevated);
       }
 
       .get-started-btn:active {
-        transform: translateY(-1px) scale(1.01);
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+        transform: scale(0.98);
       }
 
-      .get-started-btn svg {
+      .get-started-btn i {
         transition: transform 0.3s ease;
       }
 
-      .get-started-btn:hover svg {
-        transform: translateX(5px);
+      .get-started-btn:hover i {
+        transform: translateX(4px);
+      }
+
+      .cta-info {
+        font-size: 0.9375rem;
+        color: var(--muted-foreground);
+      }
+
+      /* Decorative Bottom Gradient */
+      .bottom-gradient {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 160px;
+        background: linear-gradient(to top, rgba(23, 185, 164, 0.05) 0%, transparent 100%);
+        pointer-events: none;
       }
 
       /* Close Button */
@@ -729,23 +1216,42 @@
         justify-content: space-between;
         align-items: center;
         padding: 1rem 2rem;
-        background: transparent;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         z-index: 1001;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       .avatar-logo img {
         height: 40px;
         width: auto;
-        filter: none;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
         transition: transform 0.3s ease;
       }
 
       .avatar-logo img:hover {
         transform: scale(1.05);
+      }
+
+      .avatar-top-bar .technocit-logo {
+        height: 40px;
+        width: auto;
+        transition: transform 0.3s ease;
+        transform: scale(1.8);
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+      }
+
+      .avatar-top-bar .technocit-logo:hover {
+        transform: scale(1.9);
+      }
+
+      .avatar-top-bar .technocit-logo-container {
+        margin-right: 1.5rem;
+        padding: 0.75rem;
       }
 
 
@@ -793,6 +1299,7 @@
         padding: 0;
         border: none;
         position: relative;
+        animation: scaleIn 0.5s ease 0.3s both;
       }
 
       #avatarVideo {
@@ -804,6 +1311,7 @@
         object-position: center;
         max-width: 100%;
         max-height: 100%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       }
 
       .current-subtitle {
@@ -837,33 +1345,91 @@
         display: flex;
         gap: 12px;
         z-index: 1002;
+        pointer-events: auto;
       }
 
       .control-btn-small {
-        width: 44px;
-        height: 44px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.25);
-        border: none;
-        color: white;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        font-size: 1.25rem;
       }
 
-      .control-btn-small:hover {
-        background: rgba(255, 255, 255, 0.3);
+      /* Chat button - White with teal icon */
+      .control-btn-small:nth-child(1) {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(23, 185, 164, 0.3);
+      }
+
+      .control-btn-small:nth-child(1) i {
+        color: #17B9A4;
+      }
+
+      .control-btn-small:nth-child(1):hover {
+        background: rgba(255, 255, 255, 1);
+        border-color: #17B9A4;
+        box-shadow: 0 6px 20px rgba(23, 185, 164, 0.3);
         transform: scale(1.1);
-        box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+      }
+
+      .control-btn-small:nth-child(1):hover i {
+        color: #14A391;
+      }
+
+      /* Mic button - White with navy icon */
+      .control-btn-small:nth-child(2) {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(26, 29, 61, 0.3);
+      }
+
+      .control-btn-small:nth-child(2) i {
+        color: #1A1D3D;
+      }
+
+      .control-btn-small:nth-child(2):hover {
+        background: rgba(255, 255, 255, 1);
+        border-color: #1A1D3D;
+        box-shadow: 0 6px 20px rgba(26, 29, 61, 0.3);
+        transform: scale(1.1);
+      }
+
+      .control-btn-small:nth-child(2):hover i {
+        color: #0D0F1F;
+      }
+
+      /* End button - White with gray icon */
+      .control-btn-small:nth-child(3) {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(107, 114, 128, 0.3);
+      }
+
+      .control-btn-small:nth-child(3) i {
+        color: #6B7280;
+      }
+
+      .control-btn-small:nth-child(3):hover {
+        background: rgba(255, 255, 255, 1);
+        border-color: #6B7280;
+        box-shadow: 0 6px 20px rgba(107, 114, 128, 0.2);
+        transform: scale(1.1);
+      }
+
+      .control-btn-small:nth-child(3):hover i {
+        color: #4B5563;
       }
 
       .control-btn-small:active {
         transform: scale(0.95);
+        transition: transform 0.1s ease;
       }
 
       .control-btn-small i {
@@ -896,26 +1462,37 @@
 
       /* Specific button icon styling */
       #chatBtn i {
-        color: #3b82f6;
+        color: #17B9A4;
       }
 
       #micBtn i {
-        color: #ef4444; /* red to stand out on the background */
+        color: #1A1D3D; /* navy to match Twintik brand */
       }
 
       #endSessionBtn i {
-        color: #ef4444;
+        color: #6B7280;
       }
 
       /* Hover effects for each button */
       #chatBtn:hover {
-        background: rgba(59, 130, 246, 0.3);
-        border-color: rgba(59, 130, 246, 0.5);
+        background: rgba(23, 185, 164, 0.3);
+        border-color: rgba(23, 185, 164, 0.5);
       }
 
       #micBtn:hover {
         background: rgba(239, 68, 68, 0.2);
         border-color: rgba(239, 68, 68, 0.45);
+      }
+
+      /* Mic button recording state */
+      #micBtn.recording {
+        background: rgba(239, 68, 68, 0.95) !important;
+        border-color: #EF4444 !important;
+        animation: micPulse 1.5s ease-in-out infinite;
+      }
+
+      #micBtn.recording i {
+        color: white !important;
       }
 
        .chat-sidebar {
@@ -926,7 +1503,7 @@
          height: 100vh;
          background: #ffffff;
          border-left: 1px solid #e5e7eb;
-         display: flex;
+         display: none; /* HIDDEN - Using floating bubble instead */
          flex-direction: column;
          margin: 0;
          padding: 0;
@@ -940,6 +1517,7 @@
 
        .chat-sidebar.open {
          transform: translateX(0);
+         display: none; /* Keep hidden even when open class is added */
        }
 
       .chat-header {
@@ -1012,7 +1590,11 @@
         display: flex;
         flex-direction: column;
         gap: 1rem;
-        background: #ffffff;
+        background: #F9FAFB;
+      }
+
+      .chat-messages .chat-message:first-child {
+        margin-top: auto;
       }
 
       .chat-input-area {
@@ -1149,31 +1731,398 @@
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+        animation: fadeInUp 0.3s ease both;
+        max-width: 85%;
+      }
+
+      .user-message {
+        align-self: flex-end;
+      }
+
+      .bot-message {
+        align-self: flex-start;
       }
 
        .message-content {
-         background: #f3f4f6;
-         color: #1f2937;
+         background: #F3F4F6;
+         color: #1F2937;
          padding: 0.75rem 1rem;
          border-radius: 12px;
          font-size: 0.9rem;
-         line-height: 1.4;
-         border: 1px solid #e5e7eb;
+         line-height: 1.5;
+         border: 1px solid #E5E7EB;
          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+         white-space: pre-wrap;
+         word-wrap: break-word;
+         overflow-wrap: break-word;
+         max-width: 100%;
+       }
+
+       .message-content p {
+         margin: 0 0 0.5rem 0;
+       }
+
+       .message-content p:last-child {
+         margin-bottom: 0;
+       }
+
+       /* Markdown Headings */
+       .message-content h1 {
+         font-size: 1.5rem;
+         font-weight: 700;
+         color: #1A1D3D;
+         margin: 1rem 0 0.75rem 0;
+         line-height: 1.3;
+       }
+
+       .message-content h1:first-child {
+         margin-top: 0;
+       }
+
+       .message-content h2 {
+         font-size: 1.25rem;
+         font-weight: 700;
+         color: #1A1D3D;
+         margin: 0.875rem 0 0.625rem 0;
+         line-height: 1.3;
+       }
+
+       .message-content h3 {
+         font-size: 1.1rem;
+         font-weight: 600;
+         color: #2C3E50;
+         margin: 0.75rem 0 0.5rem 0;
+         line-height: 1.3;
+       }
+
+       /* Bold and Italic */
+       .message-content strong {
+         font-weight: 700;
+         color: #1A1D3D;
+       }
+
+       .message-content em {
+         font-style: italic;
+         color: #2C3E50;
+       }
+
+       /* Links */
+       .message-content a {
+         color: #17B9A4;
+         text-decoration: underline;
+         transition: color 0.2s ease;
+       }
+
+       .message-content a:hover {
+         color: #14A391;
+       }
+
+       /* Lists */
+       .message-content ul,
+       .message-content ol {
+         margin: 0.75rem 0;
+         padding-left: 1.75rem;
+       }
+
+       .message-content li {
+         margin: 0.375rem 0;
+         line-height: 1.6;
+       }
+
+       .message-content ul li {
+         list-style-type: disc;
+       }
+
+       .message-content ol li {
+         list-style-type: decimal;
+       }
+
+       /* Code */
+       .message-content code {
+         background: #F0F9F7;
+         color: #1A1D3D;
+         padding: 0.2rem 0.5rem;
+         border-radius: 4px;
+         font-family: 'Courier New', Consolas, Monaco, monospace;
+         font-size: 0.85rem;
+         border: 1px solid #C9EBE7;
+       }
+
+       /* Code Blocks */
+       .message-content pre {
+         background: #F0F9F7;
+         border: 1px solid #C9EBE7;
+         border-radius: 8px;
+         padding: 1rem;
+         overflow-x: auto;
+         margin: 0.75rem 0;
+       }
+
+       .message-content pre code {
+         background: none;
+         color: #1A1D3D;
+         padding: 0;
+         border: none;
+         font-size: 0.9rem;
+       }
+
+       /* Blockquotes */
+       .message-content blockquote {
+         border-left: 4px solid #17B9A4;
+         padding-left: 1rem;
+         margin: 0.75rem 0;
+         color: #2C3E50;
+         font-style: italic;
+         background: #F0F9F7;
+         padding: 0.75rem 1rem;
+         border-radius: 4px;
+       }
+
+       .message-content blockquote p {
+         margin: 0;
+       }
+
+       /* Horizontal Rules */
+       .message-content hr {
+         border: none;
+         border-top: 2px solid #C9EBE7;
+         margin: 1rem 0;
        }
 
        .user-message .message-content {
-         background: #3b82f6;
+         background: #3B82F6;
          color: white;
-         border-color: #2563eb;
+         border-color: #2563EB;
          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
        }
 
+       .user-message .message-content a {
+         color: white;
+         text-decoration: underline;
+       }
+
+       .user-message .message-content code {
+         background: rgba(255, 255, 255, 0.2);
+       }
+
+       .user-message .message-content pre {
+         background: rgba(255, 255, 255, 0.1);
+       }
+
       .message-time {
-        font-size: 0.75rem;
-        color: #6b7280;
-        text-align: right;
+        font-size: 0.7rem;
+        color: #9CA3AF;
         margin-top: 0.25rem;
+        font-weight: 400;
+      }
+
+      .user-message .message-time {
+        text-align: right;
+      }
+
+      .bot-message .message-time {
+        text-align: left;
+      }
+
+      /* Additional text formatting styles */
+      .message-content h1,
+      .message-content h2,
+      .message-content h3 {
+        margin: 0.5rem 0 0.25rem 0;
+        font-weight: 600;
+        line-height: 1.3;
+      }
+
+      .message-content h1 {
+        font-size: 1.1rem;
+      }
+
+      .message-content h2 {
+        font-size: 1rem;
+      }
+
+      .message-content h3 {
+        font-size: 0.95rem;
+      }
+
+      .message-content blockquote {
+        border-left: 3px solid #E5E7EB;
+        padding-left: 0.75rem;
+        margin: 0.5rem 0;
+        font-style: italic;
+        color: #6B7280;
+      }
+
+      .user-message .message-content blockquote {
+        border-left-color: rgba(255, 255, 255, 0.5);
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      /* ===== FLOATING CHAT BUBBLE WINDOW ===== */
+      .chat-bubble-window {
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        width: 360px;
+        height: 500px;
+        max-height: calc(100vh - 120px);
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        display: none;
+        flex-direction: column;
+        z-index: 1400;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        transform: scale(0.95) translateY(20px);
+        opacity: 0;
+        border: 1px solid #E5E7EB;
+      }
+
+      .chat-bubble-window.open {
+        display: flex;
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+
+      .chat-bubble-header {
+        padding: 1rem 1.5rem;
+        background: #17B9A4;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .chat-bubble-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: white;
+      }
+
+      .close-bubble-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+      }
+
+      .close-bubble-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+      }
+
+      .close-bubble-btn:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+      }
+
+      .close-bubble-btn i {
+        font-size: 14px;
+      }
+
+      .chat-bubble-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        background: #F5F5F5;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .chat-bubble-messages .chat-message:first-child {
+        margin-top: auto;
+      }
+
+      .chat-bubble-messages::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .chat-bubble-messages::-webkit-scrollbar-track {
+        background: #E5E7EB;
+      }
+
+      .chat-bubble-messages::-webkit-scrollbar-thumb {
+        background: #9CA3AF;
+        border-radius: 3px;
+      }
+
+      .chat-bubble-messages::-webkit-scrollbar-thumb:hover {
+        background: #6B7280;
+      }
+
+      .chat-bubble-input-area {
+        padding: 1rem;
+        background: white;
+        border-top: 1px solid #E5E7EB;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .chat-bubble-input-area input {
+        flex: 1;
+        background: #F9FAFB;
+        border: 2px solid #E5E7EB;
+        border-radius: 25px;
+        padding: 0.75rem 1.25rem;
+        color: #1F2937;
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.3s ease;
+        font-family: inherit;
+      }
+
+      .chat-bubble-input-area input:focus {
+        background: #FFFFFF;
+        border-color: #3B82F6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      .chat-bubble-input-area input::placeholder {
+        color: #9CA3AF;
+      }
+
+      .send-bubble-btn {
+        background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      }
+
+      .send-bubble-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      }
+
+      .send-bubble-btn:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+      }
+
+      .send-bubble-btn i {
+        font-size: 16px;
+        color: white;
       }
 
       .avatar-bottom-bar {
@@ -1441,44 +2390,1002 @@
           max-width: 100%;
         }
       }
+
+      /* ===== MOBILE OPTIMIZATION STYLES ===== */
+
+      /* Safe Area Insets for iOS */
+      .avatar-interface {
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+
+      /* Toast Notification System */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        padding: 12px 24px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.85);
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 10000;
+        max-width: 90%;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      .toast.toast-error {
+        background: rgba(220, 38, 38, 0.95);
+      }
+
+      .toast.toast-success {
+        background: rgba(16, 185, 129, 0.95);
+      }
+
+      .toast.toast-info {
+        background: rgba(59, 130, 246, 0.95);
+      }
+
+      /* Button Labels for Mobile */
+      .btn-label {
+        display: none;
+        font-size: 10px;
+        margin-top: 4px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Flexible Video Sizing */
+      .avatar-video-section {
+        transition: height 0.3s ease;
+      }
+
+      .avatar-video-section.chat-active {
+        height: 60vh;
+      }
+
+      /* Floating Countdown Timer */
+      .countdown-timer {
+        position: fixed;
+        bottom: 90px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        padding: 0.75rem 1.25rem;
+        border-radius: 50px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        z-index: 999;
+        transition: all 0.3s ease;
+        border: 2px solid #10b981;
+        color: #065f46;
+      }
+
+      .countdown-timer i {
+        font-size: 1rem;
+        color: inherit;
+      }
+
+      /* Color states based on time remaining */
+      .countdown-timer.safe {
+        border-color: #10b981;
+        color: #065f46;
+      }
+
+      .countdown-timer.warning {
+        border-color: #f59e0b;
+        color: #92400e;
+        animation: timerPulse 2s ease-in-out infinite;
+      }
+
+      .countdown-timer.critical {
+        border-color: #ef4444;
+        color: #991b1b;
+        animation: timerPulse 1s ease-in-out infinite;
+      }
+
+      @keyframes timerPulse {
+        0%, 100% {
+          transform: scale(1);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+        50% {
+          transform: scale(1.05);
+          box-shadow: 0 6px 24px rgba(239, 68, 68, 0.4);
+        }
+      }
+
+      /* Mobile-Specific Styles (≤768px) */
+      @media (max-width: 768px) {
+        /* Logo Sizing for Mobile */
+        .header-bar {
+          padding: 1rem 1.25rem;
+        }
+
+        /* Countdown Timer - Mobile positioning */
+        .countdown-timer {
+          bottom: 80px;
+          left: 15px;
+          padding: 0.625rem 1rem;
+          font-size: 0.8125rem;
+        }
+
+        .twintik-logo {
+          height: 32px;
+        }
+
+        .technocit-badge {
+          padding: 0.375rem 0.75rem;
+        }
+
+        .badge-label {
+          font-size: 0.75rem;
+        }
+
+        .badge-icon {
+          width: 28px;
+          height: 28px;
+        }
+
+        .badge-icon::after {
+          width: 16px;
+          height: 16px;
+        }
+
+        .technocit-logo {
+          height: 28px;
+        }
+
+        .avatar-top-bar .technocit-logo {
+          height: 32px;
+          transform: scale(1.5);
+        }
+
+        .avatar-top-bar .technocit-logo:hover {
+          transform: scale(1.6);
+        }
+
+        /* Button Labels - Hidden on Mobile (icons only) */
+        .control-btn-small {
+          width: 64px;
+          height: 64px;
+          flex-direction: column;
+          gap: 4px;
+          padding: 8px;
+        }
+
+        .btn-label {
+          display: none;
+        }
+
+        /* Chat Sidebar Push Behavior */
+        .avatar-main-content {
+          flex-direction: column;
+          transition: all 0.3s ease;
+        }
+
+        .chat-sidebar {
+          position: relative;
+          width: 100%;
+          height: 0;
+          transform: none;
+          transition: height 0.3s ease;
+          border-left: none;
+          border-top: 1px solid #e5e7eb;
+          overflow: hidden;
+        }
+
+        .chat-sidebar.open {
+          height: 40vh;
+        }
+
+        .avatar-video-section.chat-active {
+          height: 60vh;
+          flex-shrink: 0;
+        }
+
+        /* Touch Target Improvements */
+        .chat-input-area input {
+          padding: 1rem 1.25rem;
+          font-size: 16px; /* Prevents zoom on iOS */
+        }
+
+        .chat-bubble-input-area input {
+          padding: 0.875rem 1.125rem;
+          font-size: 16px; /* Prevents zoom on iOS */
+        }
+
+        /* Larger send button on mobile */
+        .send-bubble-btn {
+          width: 48px;
+          height: 48px;
+          min-width: 48px;
+          min-height: 48px;
+        }
+
+        .send-bubble-btn i {
+          font-size: 18px;
+        }
+
+        .chat-message {
+          padding: 0.5rem 0;
+          max-width: 90%;
+        }
+
+        .message-content {
+          padding: 1rem 1.25rem;
+          font-size: 0.95rem;
+          line-height: 1.6;
+        }
+
+        .chat-bubble-messages {
+          gap: 1rem;
+        }
+
+        /* Welcome Screen Mobile Optimization */
+        .welcome-content {
+          padding: 2rem 1.25rem;
+          max-width: 100%;
+          margin: 0 auto;
+        }
+
+        .welcome-content {
+          padding: 6rem 1.25rem 3rem 1.25rem;
+        }
+
+        .ai-badge {
+          font-size: 0.8rem;
+          padding: 0.4rem 0.875rem;
+        }
+
+        .welcome-title {
+          font-size: 2.75rem;
+          line-height: 1.15;
+          margin-bottom: 1.25rem;
+        }
+
+        .title-underline {
+          bottom: -4px;
+          height: 8px;
+        }
+
+        .welcome-subtitle {
+          font-size: 1.125rem;
+          max-width: 100%;
+          margin-bottom: 2.5rem;
+          line-height: 1.7;
+        }
+
+        .feature-highlights {
+          grid-template-columns: 1fr;
+          gap: 1rem;
+          margin-bottom: 2.5rem;
+        }
+
+        .feature-card {
+          padding: 1.25rem;
+        }
+
+        .feature-card-header {
+          gap: 0.875rem;
+        }
+
+        .feature-icon {
+          width: 44px;
+          height: 44px;
+          font-size: 1.125rem;
+        }
+
+        .feature-card-title {
+          font-size: 1rem;
+        }
+
+        .feature-card-description {
+          font-size: 0.8125rem;
+          margin-left: 56px;
+        }
+
+        .get-started-btn {
+          padding: 1rem 2.25rem;
+          font-size: 1rem;
+          width: 100%;
+          max-width: 340px;
+        }
+
+        .cta-info {
+          font-size: 0.8125rem;
+        }
+
+        .footer-content {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .footer-links {
+          justify-content: center;
+        }
+
+        /* Optimize orbs for mobile */
+        .orb-1,
+        .orb-2 {
+          opacity: 0.2;
+          filter: blur(60px);
+        }
+
+        .orb-3,
+        .orb-4 {
+          display: none;
+        }
+
+        /* Footer Mobile - More Readable */
+        .trust-footer {
+          bottom: 15px;
+          padding: 0 1.5rem;
+        }
+
+        .footer-text {
+          font-size: 0.95rem;
+          font-weight: 500;
+          line-height: 1.4;
+          color: #2C3E50;
+        }
+
+
+        /* Welcome Screen - Ensure no overlap with footer */
+        .welcome-screen {
+          padding-bottom: 100px;
+        }
+
+        .welcome-content {
+          padding-bottom: 1rem;
+        }
+
+        /* Control Buttons Spacing */
+        .control-buttons {
+          gap: 12px;
+          bottom: 18px;
+          right: 18px;
+        }
+
+        /* Ensure minimum touch spacing */
+        .feature-item {
+          min-height: 48px;
+        }
+
+        .get-started-btn {
+          min-height: 52px;
+        }
+
+        /* Bottom Bar Adjustments */
+        .avatar-bottom-bar {
+          padding: 1rem 1.5rem;
+          min-height: 60px;
+        }
+
+        /* Toast Positioning for Mobile */
+        .toast {
+          bottom: calc(20px + env(safe-area-inset-bottom));
+          max-width: 85%;
+        }
+
+        /* Floating Chat Bubble - Mobile */
+        .chat-bubble-window {
+          width: calc(100vw - 40px);
+          max-width: 350px;
+          height: 450px;
+          max-height: calc(100vh - 130px);
+          bottom: 110px;
+          right: 20px;
+        }
+
+        /* Keep avatar full size - override old behavior */
+        .avatar-video-section {
+          height: 100vh !important;
+        }
+
+        .avatar-video-section.chat-active {
+          height: 100vh !important;
+        }
+      }
+
+      /* iPhone Pro Max Specific (≤428px) */
+      @media (max-width: 428px) {
+        /* Adaptive Button Sizing - Medium-Large */
+        .control-btn-small {
+          width: 60px;
+          height: 60px;
+          font-size: 16px;
+        }
+
+        .control-btn-small i {
+          font-size: 16px;
+        }
+
+        /* Optimized Spacing */
+        .control-buttons {
+          gap: 10px;
+          bottom: 18px;
+        }
+
+        /* Chat Bubble Positioning */
+        .chat-bubble-window {
+          bottom: 108px;
+          max-height: calc(100vh - 128px);
+        }
+      }
+
+      /* Small Phones (≤375px) - Larger Buttons */
+      @media (max-width: 375px) {
+        /* Smaller Logos for Small Phones */
+        .header-bar {
+          padding: 0.875rem 1rem;
+        }
+
+        .twintik-logo {
+          height: 28px;
+        }
+
+        .technocit-badge {
+          padding: 0.375rem 0.625rem;
+        }
+
+        .badge-label {
+          display: none;
+        }
+
+        .technocit-logo {
+          height: 24px;
+        }
+
+        .avatar-top-bar .technocit-logo {
+          height: 28px;
+          transform: scale(1.4);
+        }
+
+        .avatar-top-bar .technocit-logo:hover {
+          transform: scale(1.5);
+        }
+
+        .control-btn-small {
+          width: 68px;
+          height: 68px;
+          font-size: 18px;
+        }
+
+        .control-btn-small i {
+          font-size: 18px;
+        }
+
+        .btn-label {
+          display: none;
+        }
+
+        .control-buttons {
+          gap: 8px;
+          bottom: 15px;
+        }
+
+        .welcome-content {
+          padding: 5rem 1rem 2.5rem 1rem;
+        }
+
+        .ai-badge {
+          font-size: 0.75rem;
+          padding: 0.375rem 0.75rem;
+          margin-bottom: 1.5rem;
+        }
+
+        .welcome-title {
+          font-size: 2.25rem;
+          line-height: 1.2;
+          margin-bottom: 1rem;
+        }
+
+        .welcome-subtitle {
+          font-size: 1rem;
+          line-height: 1.6;
+          margin-bottom: 2rem;
+        }
+
+        .feature-highlights {
+          gap: 0.875rem;
+          margin-bottom: 2rem;
+        }
+
+        .feature-card {
+          padding: 1.125rem;
+        }
+
+        .feature-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 1rem;
+        }
+
+        .feature-card-title {
+          font-size: 0.9375rem;
+        }
+
+        .feature-card-description {
+          font-size: 0.75rem;
+          margin-left: 52px;
+        }
+
+        .get-started-btn {
+          padding: 0.875rem 2rem;
+          font-size: 0.9375rem;
+        }
+
+        .cta-info {
+          font-size: 0.75rem;
+        }
+
+        .footer-text,
+        .footer-link {
+          font-size: 0.8125rem;
+        }
+
+        .chat-bubble-window {
+          width: calc(100vw - 20px);
+          height: 420px;
+          max-height: calc(100vh - 125px);
+          bottom: 105px;
+          right: 10px;
+          left: 10px;
+        }
+
+        .trust-footer {
+          bottom: 10px;
+        }
+
+        .footer-text {
+          font-size: 0.875rem;
+        }
+      }
+
+      /* Large Desktop (1400px+) - Enhanced Spacing */
+      @media (min-width: 1400px) {
+        .welcome-content {
+          max-width: 1400px;
+          padding: 12rem 4rem 7rem 4rem;
+        }
+
+        .welcome-title {
+          font-size: 5rem;
+          margin-bottom: 2.5rem;
+        }
+
+        .welcome-subtitle {
+          font-size: 1.5rem;
+          max-width: 950px;
+          margin-bottom: 4.5rem;
+        }
+
+        .feature-highlights {
+          gap: 2rem;
+          margin-bottom: 4.5rem;
+        }
+
+        .feature-card {
+          padding: 2.5rem;
+        }
+
+        .feature-icon {
+          width: 64px;
+          height: 64px;
+          font-size: 1.75rem;
+        }
+
+        .feature-card-description {
+          margin-left: 88px;
+          font-size: 1rem;
+        }
+
+        .get-started-btn {
+          padding: 1.25rem 3.5rem;
+          font-size: 1.25rem;
+        }
+      }
+
+      /* Tablets (769px - 1024px) */
+      @media (min-width: 769px) and (max-width: 1024px) {
+        .control-btn-small {
+          width: 56px;
+          height: 56px;
+        }
+
+        .chat-sidebar {
+          width: 320px;
+        }
+
+        .avatar-video-section.chat-active {
+          height: 70vh;
+        }
+
+        .chat-sidebar.open {
+          height: 30vh;
+        }
+
+        .chat-bubble-window {
+          width: 340px;
+          height: 480px;
+          max-height: calc(100vh - 115px);
+          bottom: 95px;
+        }
+      }
+
+      /* Landscape Mobile Optimization */
+      @media (orientation: landscape) and (max-height: 430px) {
+        /* Compact Logos for Landscape */
+        .header-bar {
+          padding: 0.75rem 1rem;
+        }
+
+        /* Countdown Timer - Landscape positioning */
+        .countdown-timer {
+          bottom: 15px;
+          left: 80px;
+          font-size: 0.75rem;
+          padding: 0.5rem 0.875rem;
+        }
+
+        .twintik-logo {
+          height: 30px;
+        }
+
+        .technocit-badge {
+          padding: 0.375rem 0.75rem;
+        }
+
+        .badge-label {
+          font-size: 0.75rem;
+        }
+
+        .technocit-logo {
+          height: 26px;
+        }
+
+        /* Avatar stays full screen in landscape */
+        .avatar-video-section {
+          height: 100vh !important;
+        }
+
+        /* Hide sidebar - use floating chat bubble only */
+        .chat-sidebar {
+          display: none !important;
+        }
+
+        /* Keep controls in bottom-right corner */
+        .control-buttons {
+          bottom: 15px;
+          right: 15px;
+          gap: 10px;
+        }
+
+        /* Smaller buttons for landscape */
+        .control-btn-small {
+          width: 52px;
+          height: 52px;
+          font-size: 1rem;
+        }
+
+        .control-btn-small i {
+          font-size: 16px;
+        }
+
+        /* Welcome screen landscape */
+        .welcome-content {
+          padding: 1.5rem 2.5rem;
+        }
+
+        .welcome-content {
+          padding: 5rem 2.5rem 2rem 2.5rem;
+        }
+
+        .ai-badge {
+          font-size: 0.75rem;
+          margin-bottom: 1rem;
+        }
+
+        .welcome-title {
+          font-size: 2.5rem;
+          line-height: 1.2;
+          margin-bottom: 1rem;
+        }
+
+        .welcome-subtitle {
+          font-size: 1rem;
+          margin-bottom: 1.5rem;
+          line-height: 1.5;
+        }
+
+        .feature-highlights {
+          grid-template-columns: repeat(3, 1fr);
+          margin-bottom: 1.5rem;
+          gap: 0.75rem;
+        }
+
+        .feature-card {
+          padding: 1rem;
+        }
+
+        .feature-card-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+        }
+
+        .feature-icon {
+          width: 36px;
+          height: 36px;
+          font-size: 0.9375rem;
+        }
+
+        .feature-card-title {
+          font-size: 0.875rem;
+        }
+
+        .feature-card-description {
+          font-size: 0.75rem;
+          margin-left: 0;
+        }
+
+        .get-started-btn {
+          padding: 0.75rem 1.75rem;
+          font-size: 0.9375rem;
+        }
+
+        .cta-info {
+          font-size: 0.75rem;
+        }
+
+        .welcome-footer {
+          padding: 1rem 1.5rem;
+        }
+
+        .footer-text,
+        .footer-link {
+          font-size: 0.75rem;
+        }
+
+        /* Chat Bubble in Landscape - Compact */
+        .chat-bubble-window {
+          width: 280px;
+          height: 360px;
+          max-height: calc(100vh - 105px);
+          bottom: 85px;
+          right: 15px;
+        }
+
+        /* Bottom bar in landscape */
+        .avatar-bottom-bar {
+          flex-direction: row;
+          padding: 0.5rem 1rem;
+          min-height: 45px;
+        }
+      }
+
+      /* Desktop - Hide Button Labels */
+      @media (min-width: 769px) {
+        .btn-label {
+          display: none;
+        }
+
+        /* Ensure proper spacing on desktop */
+        .control-buttons {
+          gap: 15px;
+        }
+      }
+
+      /* Large Screens (>1024px) */
+      @media (min-width: 1025px) {
+        .chat-bubble-window {
+          width: 380px;
+          height: 550px;
+          max-height: calc(100vh - 120px);
+          bottom: 100px;
+          right: 30px;
+        }
+
+        .control-buttons {
+          bottom: 25px;
+          right: 25px;
+        }
+      }
+
+      /* Keyboard Open State - Applied via JavaScript */
+      .avatar-video-section.keyboard-open {
+        height: 40vh !important;
+        transition: height 0.2s ease;
+      }
+
+      /* Footer */
+      /* Footer */
+      .welcome-footer {
+        position: relative;
+        z-index: 10;
+        padding: 2.5rem 3rem;
+        border-top: 1px solid rgba(23, 185, 164, 0.2);
+      }
+
+      .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2rem;
+      }
+
+      .footer-text {
+        font-size: 0.9375rem;
+        color: var(--muted-foreground);
+        text-align: left;
+      }
+
+      .footer-links {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .footer-link {
+        font-size: 0.9375rem;
+        color: var(--muted-foreground);
+        text-decoration: none;
+        transition: color 0.3s ease;
+      }
+
+      .footer-link:hover {
+        color: var(--foreground);
+      }
+
+      .trust-footer {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+        width: 100%;
+        padding: 0 1rem;
+      }
+
+      .welcome-screen .trust-footer {
+        display: none;
+      }
+
+      /* Hide trust footer in avatar interface */
+      #avatarInterface .trust-footer {
+        display: none;
+      }
     </style>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   </head>
 
   <body>
     <!-- Header with Logo -->
     <header class="header-bar">
-      <div class="logo-container">
+      <div class="logo-container animate-fade-up">
         <img src="https://twintik.com/images/logo.svg" alt="Twintik Logo" class="twintik-logo" />
+      </div>
+      <div class="technocit-badge animate-fade-up">
+        <span class="badge-label">Powered by</span>
+        <a href="https://technocit.com" target="_blank" rel="noopener noreferrer" class="technocit-logo-link">
+          <img src="https://technocit.com/wp-content/uploads/2024/05/Logo.svg" alt="TechnoCIT Logo" class="technocit-logo" />
+        </a>
       </div>
     </header>
 
     <!-- Welcome Screen -->
     <div id="welcomeScreen" class="welcome-screen">
+      <!-- Floating Orbs Background -->
+      <div class="floating-orb orb-1"></div>
+      <div class="floating-orb orb-2"></div>
+      <div class="floating-orb orb-3"></div>
+      <div class="floating-orb orb-4"></div>
+
+      <!-- Grid Pattern Overlay -->
+      <div class="grid-pattern"></div>
+
+      <!-- Main Content -->
       <div class="welcome-content">
-        <div class="welcome-icon">🤖</div>
-        <h1 class="welcome-title">Meet Your AI Twin</h1>
-        <p class="welcome-subtitle">Experience the future of human-AI interaction with our advanced avatar technology. Speak naturally and get instant responses from our intelligent virtual assistant.</p>Exp
-        <div class="feature-highlights">
-          <div class="feature-item">
-            <div class="feature-icon">🎯</div>
-            <span>Smart Conversations</span>
+
+        <!-- Main Headline -->
+        <h1 class="welcome-title animate-fade-up-delayed">
+          Experience
+          <span class="text-gradient title-highlight">
+            Twintik's
+            <svg class="title-underline" viewBox="0 0 300 12" fill="none">
+              <path d="M2 10C50 4 100 2 150 6C200 10 250 4 298 8" stroke="hsl(168, 76%, 36%)" stroke-width="3" stroke-linecap="round" />
+            </svg>
+          </span>
+          <br />
+          AI Avatar
+        </h1>
+
+        <!-- Subheadline -->
+        <p class="welcome-subtitle animate-fade-up-delayed-2">
+          <span class="subtitle-highlight">Sandeep, Director of TechnoCIT</span>, is here to help through his AI avatar. Ask anything about our services, anytime.
+        </p>
+
+        <!-- Feature Cards -->
+        <div class="feature-highlights animate-fade-up-delayed-2">
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div class="feature-icon">
+                <i class="fas fa-clock"></i>
+              </div>
+              <h3 class="feature-card-title">Available 24/7</h3>
+            </div>
+            <p class="feature-card-description">Get answers around the clock, whenever you need them.</p>
           </div>
-          <div class="feature-item">
-            <div class="feature-icon">⚡</div>
-            <span>Real-time Responses</span>
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div class="feature-icon">
+                <i class="fas fa-bolt"></i>
+              </div>
+              <h3 class="feature-card-title">Instant Answers</h3>
+            </div>
+            <p class="feature-card-description">No waiting. Get real-time responses to your queries.</p>
           </div>
-          <div class="feature-item">
-            <div class="feature-icon">🔒</div>
-            <span>Secure & Private</span>
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div class="feature-icon">
+                <i class="fas fa-shield-alt"></i>
+              </div>
+              <h3 class="feature-card-title">100% Confidential</h3>
+            </div>
+            <p class="feature-card-description">Your conversations are private and secure.</p>
           </div>
         </div>
-        <button id="getStartedBtn" class="get-started-btn">
-          <span>Start Conversation</span>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
+
+        <!-- CTA Button -->
+        <div class="cta-section animate-fade-up-delayed-3">
+          <button id="getStartedBtn" class="get-started-btn">
+            <span>Interact with Sandeep's AI Twin</span>
+            <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
       </div>
+
+      <!-- Decorative Bottom Gradient -->
+      <div class="bottom-gradient"></div>
+
+      <!-- Footer -->
+      <footer class="welcome-footer">
+        <div class="footer-content">
+          <p class="footer-text">
+            © Twintik 2025 <span style="margin: 0 0.5rem;">•</span> Powered by TechnoCIT
+          </p>
+          <div class="footer-links">
+            <a href="#" class="footer-link">Privacy</a>
+            <a href="#" class="footer-link">Terms</a>
+            <a href="#" class="footer-link">Contact</a>
+          </div>
+        </div>
+      </footer>
     </div>
 
     <!-- Avatar Interface (Hidden Initially) - Full Screen Layout -->
@@ -1488,6 +3395,9 @@
         <div class="avatar-logo">
           <img src="https://twintik.com/images/logo.svg" alt="Twintik Logo" class="twintik-logo" />
         </div>
+        <div class="technocit-logo-container">
+          <img src="https://technocit.com/wp-content/uploads/2024/05/Logo.svg" alt="TechnoCIT Logo" class="technocit-logo" />
+        </div>
       </div>
 
       <!-- Main Content Area - Full Screen Avatar -->
@@ -1496,6 +3406,12 @@
         <div class="avatar-video-section">
           <div class="video-container">
             <video id="avatarVideo" autoplay playsinline></video>
+          </div>
+
+          <!-- Floating Countdown Timer -->
+          <div id="countdownTimer" class="countdown-timer" style="display: none;">
+            <i class="fas fa-clock"></i>
+            <span id="timerText">5:00 until auto-disconnect</span>
           </div>
 
           <!-- Current Subtitle -->
@@ -1508,12 +3424,15 @@
           <div class="control-buttons">
             <button class="control-btn-small" id="chatBtn" title="Chat">
               <i class="fas fa-comments"></i>
+              <span class="btn-label">Chat</span>
             </button>
             <button class="control-btn-small" id="micBtn" title="Microphone">
               <i class="fas fa-microphone"></i>
+              <span class="btn-label">Voice</span>
             </button>
             <button class="control-btn-small" id="endSessionBtn" title="End Session">
               <i class="fas fa-times"></i>
+              <span class="btn-label">End</span>
             </button>
           </div>
         </div>
@@ -1531,7 +3450,7 @@
           <div class="chat-messages" id="chatMessages">
             <div class="chat-message bot-message">
               <div class="message-content">
-                Hi! How can I assist you today?
+                Hi. Im Sandeep, The Director of TechnoCIT and Im here to answer any questions you have about us. You can use the Chat bubble below to type in your text or use the Mic Icon to talk to me directly.
               </div>
               <div class="message-time">Just now</div>
             </div>
@@ -1541,6 +3460,25 @@
           <div class="chat-input-area" id="textInputArea" style="display: none;">
             <input type="text" id="userInput" placeholder="Type your message..." />
             <button id="speakButton" class="send-btn" title="Send message">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Floating Chat Bubble Window -->
+        <div class="chat-bubble-window" id="chatBubbleWindow">
+          <div class="chat-bubble-header">
+            <h3>Chat History</h3>
+            <button class="close-bubble-btn" id="closeBubbleBtn">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="chat-bubble-messages" id="chatBubbleMessages">
+            <!-- Messages will be added dynamically -->
+          </div>
+          <div class="chat-bubble-input-area">
+            <input type="text" id="chatBubbleInput" placeholder="Type a message..." />
+            <button class="send-bubble-btn" id="sendBubbleBtn">
               <i class="fas fa-paper-plane"></i>
             </button>
           </div>
