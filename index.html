@@ -2165,6 +2165,38 @@
 
       /* Mobile-Specific Styles (≤768px) */
       @media (max-width: 768px) {
+        /* Logo Sizing for Mobile */
+        .header-bar {
+          padding: 1rem 1.25rem;
+        }
+
+        .twintik-logo {
+          height: 32px;
+        }
+
+        .technocit-logo {
+          height: 32px;
+          transform: scale(1.5);
+        }
+
+        .technocit-logo:hover {
+          transform: scale(1.6);
+        }
+
+        .technocit-logo-container {
+          margin-right: 1rem;
+          padding: 0.5rem;
+        }
+
+        .avatar-top-bar .technocit-logo {
+          height: 32px;
+          transform: scale(1.5);
+        }
+
+        .avatar-top-bar .technocit-logo:hover {
+          transform: scale(1.6);
+        }
+
         /* Button Labels - Hidden on Mobile (icons only) */
         .control-btn-small {
           width: 64px;
@@ -2394,6 +2426,38 @@
 
       /* Small Phones (≤375px) - Larger Buttons */
       @media (max-width: 375px) {
+        /* Smaller Logos for Small Phones */
+        .header-bar {
+          padding: 0.875rem 1rem;
+        }
+
+        .twintik-logo {
+          height: 28px;
+        }
+
+        .technocit-logo {
+          height: 28px;
+          transform: scale(1.4);
+        }
+
+        .technocit-logo:hover {
+          transform: scale(1.5);
+        }
+
+        .technocit-logo-container {
+          margin-right: 0.75rem;
+          padding: 0.375rem;
+        }
+
+        .avatar-top-bar .technocit-logo {
+          height: 28px;
+          transform: scale(1.4);
+        }
+
+        .avatar-top-bar .technocit-logo:hover {
+          transform: scale(1.5);
+        }
+
         .control-btn-small {
           width: 68px;
           height: 68px;
@@ -2483,6 +2547,29 @@
 
       /* Landscape Mobile Optimization */
       @media (orientation: landscape) and (max-height: 430px) {
+        /* Compact Logos for Landscape */
+        .header-bar {
+          padding: 0.75rem 1rem;
+        }
+
+        .twintik-logo {
+          height: 30px;
+        }
+
+        .technocit-logo {
+          height: 30px;
+          transform: scale(1.45);
+        }
+
+        .technocit-logo:hover {
+          transform: scale(1.55);
+        }
+
+        .technocit-logo-container {
+          margin-right: 0.875rem;
+          padding: 0.5rem;
+        }
+
         /* Avatar stays full screen in landscape */
         .avatar-video-section {
           height: 100vh !important;
