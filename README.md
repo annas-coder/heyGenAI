@@ -29,26 +29,61 @@ A Vite + TypeScript project that integrates the HeyGen Streaming Avatar SDK with
    ```env
    # HeyGen API Configuration
    VITE_HEYGEN_API_KEY=your_heygen_api_key_here
-   
+
    # OpenAI API Configuration
    VITE_OPENAI_API_KEY=your_openai_api_key_here
+
+   # ElevenLabs API Configuration
+   VITE_ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+
+   # Inactivity Auto-Disconnect Configuration (Optional)
+   # Timeout in minutes (0 = disabled, default = 5)
+   VITE_INACTIVITY_TIMEOUT_MINUTES=5
+
+   # Warning time in seconds before disconnect (default = 30)
+   VITE_INACTIVITY_WARNING_SECONDS=30
    ```
 
 3. **Get your API keys:**
    - **HeyGen API Key**: Sign up at [HeyGen](https://heygen.com) and get your API key from the dashboard
    - **OpenAI API Key**: Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+   - **ElevenLabs API Key**: Get your API key from [ElevenLabs](https://elevenlabs.io) for speech-to-text
+
+4. **Configure inactivity timeout (Optional):**
+   The app automatically disconnects inactive sessions to save resources. Configure these settings:
+
+   - **`VITE_INACTIVITY_TIMEOUT_MINUTES`**: Minutes of inactivity before disconnect (default: 5)
+     - Set to `0` to disable auto-disconnect
+     - Recommended: 5-15 minutes for production
+
+   - **`VITE_INACTIVITY_WARNING_SECONDS`**: Warning time before disconnect (default: 30)
+     - Must be less than the timeout duration
+
+   **Examples:**
+   ```env
+   # Quick demo sessions (2 minutes)
+   VITE_INACTIVITY_TIMEOUT_MINUTES=2
+   VITE_INACTIVITY_WARNING_SECONDS=15
+
+   # Long training sessions (15 minutes)
+   VITE_INACTIVITY_TIMEOUT_MINUTES=15
+   VITE_INACTIVITY_WARNING_SECONDS=60
+
+   # Disabled (no auto-disconnect)
+   VITE_INACTIVITY_TIMEOUT_MINUTES=0
+   ```
 
 ## Usage
 
-1. **Start the development server:**
+5. **Start the development server:**
    ```bash
    npm run dev
    ```
 
-2. **Open your browser:**
+6. **Open your browser:**
    Navigate to `http://localhost:5173`
 
-3. **Interact with the avatar:**
+7. **Interact with the avatar:**
    - Click "Start Session" to initialize the avatar
    - Type your message in the input field
    - Click "Speak" to send your message to the avatar

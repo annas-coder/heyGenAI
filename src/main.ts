@@ -43,6 +43,12 @@ const chatBtn = document.getElementById("chatBtn") as HTMLButtonElement;
 const micBtn = document.getElementById("micBtn") as HTMLButtonElement;
 const endSessionBtn = document.getElementById("endSessionBtn") as HTMLButtonElement;
 const avatarVideoSection = document.querySelector(".avatar-video-section") as HTMLElement;
+// Floating chat bubble elements
+const chatBubbleWindow = document.getElementById("chatBubbleWindow") as HTMLElement;
+const closeBubbleBtn = document.getElementById("closeBubbleBtn") as HTMLButtonElement;
+const chatBubbleInput = document.getElementById("chatBubbleInput") as HTMLInputElement;
+const sendBubbleBtn = document.getElementById("sendBubbleBtn") as HTMLButtonElement;
+const chatBubbleMessages = document.getElementById("chatBubbleMessages") as HTMLElement;
 
 let avatar: StreamingAvatar | null = null;
 let sessionData: any = null;
@@ -1289,15 +1295,15 @@ async function initializeAvatarSession() {
 
       // Update chat open state when chat is toggled
       const updateChatState = () => {
-        isChatOpen = chatSidebar?.classList.contains('open') || false;
+        isChatOpen = chatBubbleWindow?.classList.contains('open') || false;
       };
 
-      // Add listeners to track chat state
+      // Add listeners to track chat state for the floating bubble
       if (chatBtn) {
         chatBtn.addEventListener('click', updateChatState);
       }
-      if (closeChatBtn) {
-        closeChatBtn.addEventListener('click', updateChatState);
+      if (closeBubbleBtn) {
+        closeBubbleBtn.addEventListener('click', updateChatState);
       }
 
       window.visualViewport.addEventListener('resize', () => {
@@ -2506,35 +2512,16 @@ userInput.addEventListener("keydown", (event) => {
 // New interface event listeners
 if (textInputBtn) {
   textInputBtn.addEventListener("click", () => {
-    console.log("Text input clicked");
-    // Show chat sidebar
-    if (chatSidebar) {
-      chatSidebar.classList.add("open");
-    }
-    // Make avatar smaller when chat is open
-    if (avatarMainContent) {
-      avatarMainContent.classList.add("chat-open");
-    }
-    // Add chat-active class to video section for flexible sizing
-    if (avatarVideoSection) {
-      avatarVideoSection.classList.add("chat-active");
-    }
-    // Show text input area but keep voice button visible
-    if (textInputArea) {
-      textInputArea.style.display = "flex";
-      // Keep voice button visible - don't hide it
-      if (recordButton) {
-        recordButton.style.display = "flex";
-      }
-      // Ensure input is focused and ready
+    console.log("Text input clicked - opening floating chat bubble");
+    // Open the floating chat bubble instead of sidebar
+    if (chatBubbleWindow) {
+      chatBubbleWindow.classList.add("open");
+      // Focus input when opened
       setTimeout(() => {
-        if (userInput) {
-          ensureInputEnabled();
-          userInput.focus();
-          userInput.placeholder = "Type your message here...";
-          console.log("Input enabled and focused");
+        if (chatBubbleInput) {
+          chatBubbleInput.focus();
         }
-      }, 100);
+      }, 300);
     }
   });
 }
@@ -2641,21 +2628,7 @@ if (clearChatBtn) {
   });
 }
 
-// Close chat functionality
-if (closeChatBtn && chatSidebar) {
-  closeChatBtn.addEventListener("click", () => {
-    chatSidebar.classList.remove("open");
-    // Make avatar full screen when chat closes
-    if (avatarMainContent) {
-      avatarMainContent.classList.remove("chat-open");
-    }
-    // Remove chat-active class from video section for flexible sizing
-    if (avatarVideoSection) {
-      avatarVideoSection.classList.remove("chat-active");
-    }
-    console.log("Chat closed - avatar full screen");
-  });
-}
+// Old close chat functionality removed - now using floating bubble close button
 
 // Voice mode button functionality removed - using close button instead
 
@@ -2677,7 +2650,8 @@ function updateSubtitle(text: string) {
 
 // Add message to chat history
 function addChatMessage(message: string, isUser: boolean = false) {
-  if (chatMessages) {
+  // Use the new floating chat bubble messages container
+  if (chatBubbleMessages) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `chat-message ${isUser ? 'user-message' : 'bot-message'}`;
 
@@ -2689,8 +2663,8 @@ function addChatMessage(message: string, isUser: boolean = false) {
       <div class="message-time">${timeString}</div>
     `;
 
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    chatBubbleMessages.appendChild(messageDiv);
+    chatBubbleMessages.scrollTop = chatBubbleMessages.scrollHeight;
   }
 }
 
@@ -2739,22 +2713,57 @@ window.addEventListener('unload', stopAllTTS);
 
 if (chatBtn) {
   chatBtn.addEventListener("click", () => {
-    console.log("Chat button clicked");
-    // Show chat sidebar
-    if (chatSidebar) {
-      chatSidebar.classList.add("open");
+    console.log("Chat button clicked - opening floating window");
+    if (chatBubbleWindow) {
+      chatBubbleWindow.classList.toggle("open");
+
+      // Focus input when opened
+      if (chatBubbleWindow.classList.contains("open")) {
+        setTimeout(() => {
+          if (chatBubbleInput) {
+            chatBubbleInput.focus();
+          }
+        }, 300);
+      }
     }
-    // Make avatar smaller when chat is open
-    if (avatarMainContent) {
-      avatarMainContent.classList.add("chat-open");
+  });
+}
+
+// Close bubble button handler
+if (closeBubbleBtn) {
+  closeBubbleBtn.addEventListener("click", () => {
+    console.log("Close bubble button clicked");
+    if (chatBubbleWindow) {
+      chatBubbleWindow.classList.remove("open");
     }
-    // Add chat-active class to video section for flexible sizing
-    if (avatarVideoSection) {
-      avatarVideoSection.classList.add("chat-active");
+  });
+}
+
+// Send button handler for bubble
+if (sendBubbleBtn && chatBubbleInput) {
+  const handleBubbleSend = () => {
+    const message = chatBubbleInput.value.trim();
+    if (message && message.length > 0) {
+      console.log("Sending message from bubble:", message);
+      // Reset inactivity timer
+      resetInactivityTimer();
+
+      // Add user message to chat
+      addChatMessage(message, true);
+
+      // Clear input
+      chatBubbleInput.value = "";
+
+      // Send to avatar
+      speakText(message);
     }
-    // Show text input area
-    if (textInputArea) {
-      textInputArea.style.display = "flex";
+  };
+
+  sendBubbleBtn.addEventListener("click", handleBubbleSend);
+  chatBubbleInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleBubbleSend();
     }
   });
 }
