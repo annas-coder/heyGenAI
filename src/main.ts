@@ -1203,6 +1203,9 @@ async function initializeAvatarSession() {
     avatarInterface.style.display = "flex";
     avatarInterface.classList.add("fade-in");
 
+    // Add welcome message to chat with markdown support
+    addChatMessage("**Hi! Welcome to Twintik.** I'm Sandeep, Director of TechnoCIT.\n\nI'm here to answer any questions you have about us. You can:\n- Use the **Chat bubble** below to type your text\n- Use the **Mic Icon** to talk to me directly\n\nHow can I help you today?", false);
+
     // Test subtitle visibility when avatar interface is shown
     console.log("🎬 Avatar interface shown, testing subtitle...");
     if (avatarSubtitle) {
@@ -2683,8 +2686,13 @@ function addChatMessage(message: string, isUser: boolean = false) {
     const now = new Date();
     const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // Parse markdown for bot messages only
+    const messageContent = !isUser && (window as any).marked
+      ? (window as any).marked.parse(message)
+      : message;
+
     messageDiv.innerHTML = `
-      <div class="message-content">${message}</div>
+      <div class="message-content">${messageContent}</div>
       <div class="message-time">${timeString}</div>
     `;
 
