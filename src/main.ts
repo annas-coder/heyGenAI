@@ -65,6 +65,24 @@ let isApiCallInProgress = false; // Prevent duplicate API calls
 let lastTranscriptionText = ''; // Prevent duplicate transcription processing
 let isRecordingInProgress = false; // Prevent multiple recording operations
 
+// Inactivity Timer Configuration
+// Parse inactivity timeout from environment variable (in minutes)
+const INACTIVITY_TIMEOUT_MINUTES = parseInt(import.meta.env.VITE_INACTIVITY_TIMEOUT_MINUTES || '5', 10);
+const INACTIVITY_TIMEOUT = INACTIVITY_TIMEOUT_MINUTES * 60 * 1000; // Convert to milliseconds
+
+// Parse warning time from environment variable (in seconds)
+const WARNING_TIME_SECONDS = parseInt(import.meta.env.VITE_INACTIVITY_WARNING_SECONDS || '30', 10);
+const WARNING_TIME = WARNING_TIME_SECONDS * 1000; // Convert to milliseconds
+
+// Timer state variables
+let inactivityTimer: NodeJS.Timeout | null = null;
+let inactivityWarningTimer: NodeJS.Timeout | null = null;
+let lastInteractionTime: number = Date.now();
+
+// Log configuration on startup
+console.log(`⚙️ Inactivity timeout: ${INACTIVITY_TIMEOUT_MINUTES} minutes (${INACTIVITY_TIMEOUT_MINUTES === 0 ? 'DISABLED' : 'ENABLED'})`);
+console.log(`⚙️ Warning time: ${WARNING_TIME_SECONDS} seconds`);
+
 // Toast Notification System for Mobile
 function showToast(message: string, type: 'info' | 'error' | 'success' = 'info') {
   const toast = document.createElement('div');
@@ -80,6 +98,79 @@ function showToast(message: string, type: 'info' | 'error' | 'success' = 'info')
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300);
   }, 3000);
+}
+
+// Inactivity Timer Functions
+function resetInactivityTimer() {
+  console.log('🔄 Resetting inactivity timer');
+  lastInteractionTime = Date.now();
+
+  // Clear existing timers
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
+  if (inactivityWarningTimer) {
+    clearTimeout(inactivityWarningTimer);
+    inactivityWarningTimer = null;
+  }
+
+  // Only set timer if session is active
+  if (!sessionActive) return;
+
+  // Check if inactivity timeout is disabled (0 minutes)
+  if (INACTIVITY_TIMEOUT_MINUTES === 0) {
+    console.log('⏸️ Inactivity timeout is disabled');
+    return;
+  }
+
+  // Validate that warning time is less than timeout
+  if (WARNING_TIME >= INACTIVITY_TIMEOUT) {
+    console.warn('⚠️ Warning time must be less than timeout. Skipping warning.');
+  } else {
+    // Set warning timer
+    inactivityWarningTimer = setTimeout(() => {
+      // Check if avatar is speaking - if so, extend timer
+      if (isAvatarSpeaking) {
+        console.log('⏰ Avatar is speaking, extending inactivity timer');
+        resetInactivityTimer();
+        return;
+      }
+
+      const warningMessage = `Your session will end in ${WARNING_TIME_SECONDS} seconds due to inactivity. Send a message to continue.`;
+      showToast(warningMessage, 'info');
+      console.log('⚠️ Inactivity warning shown');
+    }, INACTIVITY_TIMEOUT - WARNING_TIME);
+  }
+
+  // Set disconnect timer
+  inactivityTimer = setTimeout(() => {
+    handleInactivityDisconnect();
+  }, INACTIVITY_TIMEOUT);
+
+  console.log(`⏱️ Inactivity timer set for ${INACTIVITY_TIMEOUT_MINUTES} minutes`);
+}
+
+async function handleInactivityDisconnect() {
+  console.log('⏱️ Inactivity timeout reached');
+
+  // Check if avatar is currently speaking - extend timer if so
+  if (isAvatarSpeaking) {
+    console.log('⏰ Avatar is speaking, extending inactivity timer');
+    resetInactivityTimer();
+    return;
+  }
+
+  // Show disconnect message with configurable timeout value
+  const timeoutMessage = `Session ended due to ${INACTIVITY_TIMEOUT_MINUTES} ${INACTIVITY_TIMEOUT_MINUTES === 1 ? 'minute' : 'minutes'} of inactivity`;
+  showToast(timeoutMessage, 'info');
+
+  // Wait 2 seconds to show message, then terminate
+  setTimeout(async () => {
+    if (sessionActive && avatar) {
+      await terminateAvatarSession();
+    }
+  }, 2000);
 }
 
 // Function to show complete dialogue subtitle
@@ -260,6 +351,9 @@ function isEnglish(text: string): boolean {
 // Speech-to-speech functionality
 async function speakText(text: string) {
   console.log("🎤 speakText called with:", text);
+
+  // Reset inactivity timer on user interaction
+  resetInactivityTimer();
 
   // Show complete dialogue subtitle
   showCompleteSubtitle(text);
@@ -566,6 +660,9 @@ function initializeVoiceRecorder() {
       if (text && text.trim().length > 0) {
         console.log("🎤 Processing transcribed text:", text);
         lastTranscriptionText = text; // Store to prevent duplicates
+
+        // Reset inactivity timer on voice input
+        resetInactivityTimer();
 
         // Add user message to chat
         addChatMessage(text, true);
@@ -1177,6 +1274,10 @@ async function initializeAvatarSession() {
       }
     }, 2000);
 
+    // Start inactivity timer
+    resetInactivityTimer();
+    console.log('✅ Inactivity timer started');
+
     // Ensure input is properly enabled
     setTimeout(() => {
       ensureInputEnabled();
@@ -1282,6 +1383,9 @@ async function handleSpeak() {
       console.log("No input text");
       return;
     }
+
+    // Reset inactivity timer on user interaction
+    resetInactivityTimer();
 
     // Set API call in progress flag
     isApiCallInProgress = true;
@@ -2210,6 +2314,17 @@ async function terminateAvatarSession() {
   isInitializing = false;
   isApiCallInProgress = false; // Reset API call flag
   console.log("🎯 Session is now inactive");
+
+  // Clear inactivity timers
+  if (inactivityTimer) {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+  }
+  if (inactivityWarningTimer) {
+    clearTimeout(inactivityWarningTimer);
+    inactivityWarningTimer = null;
+  }
+  console.log('✅ Inactivity timers cleared');
 
   // CRITICAL: Stop all TTS immediately
   console.log("🔇 Stopping all TTS...");
