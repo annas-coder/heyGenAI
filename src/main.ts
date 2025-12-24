@@ -748,6 +748,9 @@ async function toggleRecording() {
       if (recordButton) {
     recordButton.classList.add("recording");
       }
+      if (micBtn) {
+        micBtn.classList.add("recording");
+      }
       if (waveformContainer) {
     waveformContainer.classList.add("active");
       }
@@ -763,6 +766,9 @@ async function toggleRecording() {
     // Stop recording
       if (recordButton) {
     recordButton.classList.remove("recording");
+      }
+      if (micBtn) {
+        micBtn.classList.remove("recording");
       }
       if (waveformContainer) {
     waveformContainer.classList.remove("active");
@@ -781,6 +787,9 @@ async function toggleRecording() {
     isRecordingInProgress = false;
     if (recordButton) {
       recordButton.classList.remove("recording");
+    }
+    if (micBtn) {
+      micBtn.classList.remove("recording");
     }
     if (waveformContainer) {
       waveformContainer.classList.remove("active");
@@ -1272,7 +1281,7 @@ async function initializeAvatarSession() {
       if (avatar) {
         try {
           await avatar.speak({
-            text: "Hi. Welcome to TechnoCIT. Im Sandeep, The Director of TechnoCIT and Im here to answer any questions you have about Twintik and TechnoCIT. You can use the Chat bubble below to type in your text or use the Mic Icon to talk to me directly.",
+            text: "Hi. Welcome to Twintik. Im Sandeep, The Director of TechnoCIT and Im here to answer any questions you have about us. You can use the Chat bubble below to type in your text or use the Mic Icon to talk to me directly.",
             task_type: TaskType.REPEAT,
             taskMode: TaskMode.SYNC
           });
@@ -2474,6 +2483,9 @@ async function terminateAvatarSession() {
   }
   if (recordButton) {
     recordButton.classList.remove("recording");
+  }
+  if (micBtn) {
+    micBtn.classList.remove("recording");
   }
   if (waveformContainer) {
     waveformContainer.classList.remove("active");

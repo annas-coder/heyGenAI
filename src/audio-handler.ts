@@ -18,7 +18,7 @@ export class VoiceRecorder {
         try {
             console.log('🎤 Requesting microphone access...');
             this.onStatusChange('🎤 Requesting microphone access...');
-            
+
             // Mobile-specific audio constraints
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             const audioConstraints: MediaTrackConstraints = {
@@ -36,12 +36,12 @@ export class VoiceRecorder {
                     sampleRate: 44100
                 })
             };
-            
-            const stream = await navigator.mediaDevices.getUserMedia({ 
+
+            const stream = await navigator.mediaDevices.getUserMedia({
                 audio: audioConstraints
             });
             console.log('✅ Microphone access granted');
-            
+
             // Mobile-specific MIME type selection
             let mimeType = 'audio/webm;codecs=opus';
             if (isMobile) {
@@ -62,11 +62,11 @@ export class VoiceRecorder {
                     }
                 }
             }
-            
+
             this.mediaRecorder = new MediaRecorder(stream, {
                 mimeType: mimeType
             });
-            
+
             this.audioChunks = [];
             this.isRecording = true;
 
@@ -79,10 +79,10 @@ export class VoiceRecorder {
 
             this.mediaRecorder.onstop = async () => {
                 console.log('🔄 Recording stopped, processing...');
-                
+
                 const audioBlob = new Blob(this.audioChunks, { type: mimeType });
                 console.log('📦 Audio blob size:', audioBlob.size, 'bytes');
-                
+
                 if (audioBlob.size > 1000) { // At least 1KB
                     await this.sendToElevenLabs(audioBlob);
                 } else {
@@ -99,15 +99,15 @@ export class VoiceRecorder {
             this.mediaRecorder.start(100); // Collect data every 100ms
             this.onStatusChange('🎤 Recording... Speak now!');
             console.log('🔴 Recording started with mimeType:', mimeType);
-            
+
         } catch (error) {
             console.error('❌ Error starting recording:', error);
             const errorMessage = (error as Error).message;
             console.error('❌ Error details:', errorMessage);
-            
+
             // Mobile-specific error handling
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
+
             if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
                 if (isMobile) {
                     this.onStatusChange('❌ Microphone access denied. Please allow microphone access in your browser settings and try again.');
@@ -144,7 +144,7 @@ export class VoiceRecorder {
             console.log('⏹️ Stopping recording...');
             this.mediaRecorder.stop();
             this.isRecording = false;
-            
+
             // Stop all tracks in the stream
             const stream = this.mediaRecorder.stream;
             stream.getTracks().forEach(track => track.stop());
@@ -154,13 +154,13 @@ export class VoiceRecorder {
     private async sendToElevenLabs(audioBlob: Blob) {
         try {
             console.log('Sending audio to ElevenLabs STT API...');
-            
+
             const formData = new FormData();
-            
+
             // Determine file extension based on blob type and mobile compatibility
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             let fileName = 'audio.webm';
-            
+
             if (audioBlob.type.includes('mp4')) {
                 fileName = 'audio.mp4';
             } else if (audioBlob.type.includes('wav')) {
@@ -171,21 +171,21 @@ export class VoiceRecorder {
                 // Mobile devices sometimes have issues with webm, try to convert
                 fileName = 'audio.webm';
             }
-            
+
             formData.append('file', audioBlob, fileName);
             formData.append("model_id", "scribe_v1");
             // Remove language restriction to allow all languages
             // formData.append("language", "en");
-            
+
             console.log('📤 Sending audio file:', fileName, 'Size:', audioBlob.size, 'Type:', audioBlob.type);
-            
+
             const apiKey = import.meta.env.VITE_ELEVENLABS_API_KEY;
             if (!apiKey) {
                 throw new Error('ElevenLabs API key not found. Please check your environment variables.');
             }
-            
+
             console.log('🔑 Using API key:', apiKey.substring(0, 8) + '...');
-            
+
             const response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
                 method: 'POST',
                 headers: {
@@ -204,9 +204,9 @@ export class VoiceRecorder {
 
             const data = await response.json();
             console.log('📝 Received transcription:', data);
-            
+
             const transcribedText = data.text || '';
-            
+
             if (transcribedText && transcribedText.trim().length > 0) {
                 console.log('✅ Transcription received:', transcribedText);
                 this.onTranscriptionComplete(transcribedText);
