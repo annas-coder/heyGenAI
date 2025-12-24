@@ -2177,6 +2177,31 @@ function handleStreamReady(event: any) {
     // CRITICAL: Prevent stream from being garbage collected
     (window as any).currentStream = event.detail;
 
+    // CRITICAL: Explicitly play the video to ensure it displays immediately
+    videoElement.play().then(() => {
+      console.log("✅ Video playback started successfully");
+    }).catch((playError) => {
+      console.warn("⚠️ Video autoplay blocked, user interaction may be required:", playError);
+      // Attempt to play muted first if unmuted autoplay fails
+      if (!videoElement.muted) {
+        videoElement.muted = true;
+        videoElement.play().then(() => {
+          console.log("✅ Video playing muted, will unmute on user interaction");
+          // Unmute on first user interaction
+          const unmuteOnInteraction = () => {
+            videoElement.muted = false;
+            console.log("🔊 Video unmuted after user interaction");
+            document.removeEventListener('click', unmuteOnInteraction);
+            document.removeEventListener('touchstart', unmuteOnInteraction);
+          };
+          document.addEventListener('click', unmuteOnInteraction, { once: true });
+          document.addEventListener('touchstart', unmuteOnInteraction, { once: true });
+        }).catch((mutedPlayError) => {
+          console.error("❌ Failed to play video even when muted:", mutedPlayError);
+        });
+      }
+    });
+
     // CRITICAL: Monitor stream health to prevent death
     startStreamHealthMonitoring(event.detail);
 
