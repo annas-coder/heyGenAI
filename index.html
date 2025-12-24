@@ -43,7 +43,7 @@
 
       .header-bar {
         display: flex;
-        justify-content: flex-start;
+        justify-content: space-between;
         align-items: center;
         padding: 1.5rem 2rem;
         background: transparent;
@@ -68,6 +68,39 @@
 
       .twintik-logo:hover {
         transform: scale(1.05);
+      }
+
+      .technocit-logo {
+        height: 40px;
+        width: auto;
+        transition: transform 0.3s ease;
+        transform: scale(1.8);
+      }
+
+      .technocit-logo:hover {
+        transform: scale(1.9);
+      }
+
+      .technocit-logo-container {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-right: 1.5rem;
+        padding: 0.75rem;
+      }
+
+      .technocit-logo-link {
+        display: inline-block;
+        text-decoration: none;
+        border: none;
+        outline: none;
+      }
+
+      .technocit-logo-link:hover,
+      .technocit-logo-link:focus {
+        text-decoration: none;
+        border: none;
+        outline: none;
       }
 
 
@@ -746,6 +779,22 @@
 
       .avatar-logo img:hover {
         transform: scale(1.05);
+      }
+
+      .avatar-top-bar .technocit-logo {
+        height: 40px;
+        width: auto;
+        transition: transform 0.3s ease;
+        transform: scale(1.8);
+      }
+
+      .avatar-top-bar .technocit-logo:hover {
+        transform: scale(1.9);
+      }
+
+      .avatar-top-bar .technocit-logo-container {
+        margin-right: 1.5rem;
+        padding: 0.75rem;
       }
 
 
@@ -1922,14 +1971,19 @@
       <div class="logo-container">
         <img src="https://twintik.com/images/logo.svg" alt="Twintik Logo" class="twintik-logo" />
       </div>
+      <div class="technocit-logo-container">
+        <a href="https://technocit.com" target="_blank" rel="noopener noreferrer" class="technocit-logo-link">
+          <img src="https://technocit.com/wp-content/uploads/2024/05/Logo.svg" alt="TechnoCIT Logo" class="technocit-logo" />
+        </a>
+      </div>
     </header>
 
     <!-- Welcome Screen -->
     <div id="welcomeScreen" class="welcome-screen">
       <div class="welcome-content">
         <div class="welcome-icon">🤖</div>
-        <h1 class="welcome-title">Meet Your AI Twin</h1>
-        <p class="welcome-subtitle">Experience the future of human-AI interaction with our advanced avatar technology. Speak naturally and get instant responses from our intelligent virtual assistant.</p>
+        <h1 class="welcome-title">Welcome to the Avatar Experience by Twintik!</h1>
+        <p class="welcome-subtitle">Meet Sandeep, Director of TechnoCIT, to answer your questions about us. Experience the future of human-AI interaction with our advanced avatar capabilities and interact with our intelligent virtual assistant.</p>
         <div class="feature-highlights">
           <div class="feature-item">
             <div class="feature-icon">🎯</div>
@@ -1945,7 +1999,7 @@
           </div>
         </div>
         <button id="getStartedBtn" class="get-started-btn">
-          <span>Start Conversation</span>
+          <span>Interact with Sandeep's AI Twin</span>
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M7.5 15L12.5 10L7.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -1959,6 +2013,9 @@
       <div class="avatar-top-bar">
         <div class="avatar-logo">
           <img src="https://twintik.com/images/logo.svg" alt="Twintik Logo" class="twintik-logo" />
+        </div>
+        <div class="technocit-logo-container">
+          <img src="https://technocit.com/wp-content/uploads/2024/05/Logo.svg" alt="TechnoCIT Logo" class="technocit-logo" />
         </div>
       </div>
 
@@ -2006,7 +2063,7 @@
           <div class="chat-messages" id="chatMessages">
             <div class="chat-message bot-message">
               <div class="message-content">
-                Hi! How can I assist you today?
+                Hi. Welcome to Twintik. Im Sandeep, The Director of TechnoCIT and Im here to answer any questions you have about us. You can use the Chat bubble below to type in your text or use the Mic Icon to talk to me directly.
               </div>
               <div class="message-time">Just now</div>
             </div>

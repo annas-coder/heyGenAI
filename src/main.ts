@@ -410,9 +410,9 @@ async function speakText(text: string) {
     // Try primary API endpoint first
     let llmResponse;
     try {
-      console.log("📡 Making API call to:", 'https://technocit.app.n8n.cloud/webhook/chat');
+      console.log("📡 Making API call to:", 'https://technocit.app.n8n.cloud/webhook/sandeep');
       console.log("📡 API call payload:", JSON.stringify({ message: text }));
-      llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
+      llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/sandeep', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' ,  'user-id': 'heygenuser'},
         body: JSON.stringify({ message: text }),
@@ -471,7 +471,7 @@ async function speakText(text: string) {
         try {
           await avatar.speak({
             text: output,
-            task_type: TaskType.TALK,
+            task_type: TaskType.REPEAT,
             taskMode: TaskMode.ASYNC
           });
           console.log('✅ Avatar speaking initiated');
@@ -538,7 +538,7 @@ async function speakText(text: string) {
           console.log('🆔 Avatar speak response ID:', responseId);
           await avatar.speak({
             text: output,
-            task_type: TaskType.TALK,
+            task_type: TaskType.REPEAT,
             taskMode: TaskMode.ASYNC
           });
           console.log('✅ Avatar speaking completed successfully');
@@ -575,7 +575,7 @@ async function speakText(text: string) {
             try {
               await avatar.speak({
                 text: output,
-                task_type: TaskType.TALK,
+                task_type: TaskType.REPEAT,
                 taskMode: TaskMode.SYNC
               });
               console.log('✅ Avatar speaking completed after status check');
@@ -1245,7 +1245,7 @@ async function initializeAvatarSession() {
 
     // Update subtitle with welcome message
     if (avatarSubtitle) {
-      avatarSubtitle.textContent = "Hi! How can I assist you today?";
+      avatarSubtitle.textContent = "Hi. Welcome to TechnoCIT. Im Sandeep, The Director of TechnoCIT and Im here to answer any questions you have about Twintik and TechnoCIT. You can use the Chat bubble below to type in your text or use the Mic Icon to talk to me directly.";
       avatarSubtitle.style.display = "block";
       avatarSubtitle.style.color = "#ffffff";
       avatarSubtitle.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
@@ -1269,8 +1269,8 @@ async function initializeAvatarSession() {
       if (avatar) {
         try {
           await avatar.speak({
-            text: "Hi, how can I assist you?",
-            task_type: TaskType.TALK,
+            text: "Hi. Welcome to TechnoCIT. Im Sandeep, The Director of TechnoCIT and Im here to answer any questions you have about Twintik and TechnoCIT. You can use the Chat bubble below to type in your text or use the Mic Icon to talk to me directly.",
+            task_type: TaskType.REPEAT,
             taskMode: TaskMode.SYNC
           });
           console.log("✅ Avatar spoke introduction message");
@@ -1424,7 +1424,7 @@ async function handleSpeak() {
       // Try primary API endpoint first
       let llmResponse;
       try {
-        llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
+        llmResponse = await fetch('https://technocit.app.n8n.cloud/webhook/sandeep', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' ,  'user-id': 'heygenuser' },
           body: JSON.stringify({ message: userMessage }),
@@ -1484,7 +1484,7 @@ async function handleSpeak() {
             console.log('🆔 Avatar speak response ID:', responseId);
             await avatar.speak({
               text: output,
-              task_type: TaskType.TALK,
+              task_type: TaskType.REPEAT,
               taskMode: TaskMode.ASYNC
             });
             console.log('✅ Avatar speaking initiated');
@@ -1587,7 +1587,7 @@ async function handleSpeak() {
           console.log("🎤 Attempting avatar speak with explicit config");
           await avatar.speak({
             text: finalOutput,
-            task_type: TaskType.TALK,
+            task_type: TaskType.REPEAT,
             taskMode: TaskMode.ASYNC
           });
           console.log("✅ Avatar speaking completed successfully");
@@ -1629,7 +1629,7 @@ async function handleSpeak() {
             try {
               await avatar.speak({
                 text: finalOutput,
-                task_type: TaskType.TALK,
+                task_type: TaskType.REPEAT,
                 taskMode: TaskMode.SYNC
               });
               console.log("✅ Avatar speaking completed after status check");
@@ -1684,7 +1684,7 @@ async function handleSpeak() {
         try {
           avatar.speak({
             text: errorMessage,
-            task_type: TaskType.TALK,
+            task_type: TaskType.REPEAT,
             taskMode: TaskMode.SYNC
           });
         } catch (speakError) {
@@ -1759,7 +1759,7 @@ function forceAvatarSpeak(text: string) {
       console.log("🎤 Attempting force speak with explicit config");
       avatar.speak({
         text: text,
-        task_type: TaskType.TALK,
+        task_type: TaskType.REPEAT,
         taskMode: TaskMode.SYNC
       });
       console.log("✅ Force speaking initiated");
@@ -1795,7 +1795,7 @@ function forceAvatarSpeak(text: string) {
 async function testAPI() {
   console.log("🧪 Testing API endpoint...");
   try {
-    const response = await fetch('https://technocit.app.n8n.cloud/webhook/chat', {
+    const response = await fetch('https://technocit.app.n8n.cloud/webhook/sandeep', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json',  'user-id': 'heygenuser' },
       body: JSON.stringify({ message: "Hello, this is a test message" })
@@ -1831,7 +1831,7 @@ async function testAvatar() {
     try {
       await avatar.speak({
         text: "Hello! I am working correctly. How can I help you today?",
-        task_type: TaskType.TALK,
+        task_type: TaskType.REPEAT,
         taskMode: TaskMode.ASYNC
       });
       console.log("✅ Avatar test successful");
