@@ -111,6 +111,9 @@ function resetInactivityTimer() {
   console.log('🔄 Resetting inactivity timer');
   lastInteractionTime = Date.now();
 
+  // Update countdown display immediately
+  updateCountdownDisplay();
+
   // Clear existing timers
   if (inactivityTimer) {
     clearTimeout(inactivityTimer);
@@ -155,6 +158,82 @@ function resetInactivityTimer() {
   }, INACTIVITY_TIMEOUT);
 
   console.log(`⏱️ Inactivity timer set for ${INACTIVITY_TIMEOUT_MINUTES} minutes`);
+}
+
+// Countdown Timer Display
+let countdownInterval: NodeJS.Timeout | null = null;
+
+function updateCountdownDisplay() {
+  const timerElement = document.getElementById('countdownTimer');
+  const timerText = document.getElementById('timerText');
+
+  if (!timerElement || !timerText || !sessionActive) {
+    return;
+  }
+
+  // Calculate time remaining
+  const now = Date.now();
+  const elapsed = now - lastInteractionTime;
+  const remaining = INACTIVITY_TIMEOUT - elapsed;
+
+  if (remaining <= 0) {
+    timerText.textContent = '0:00 until auto-disconnect';
+    return;
+  }
+
+  // Format time
+  const minutes = Math.floor(remaining / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+  const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+  timerText.textContent = `${formattedTime} until auto-disconnect`;
+
+  // Update color states based on time remaining
+  timerElement.classList.remove('safe', 'warning', 'critical');
+
+  if (remaining > 120000) { // More than 2 minutes
+    timerElement.classList.add('safe');
+  } else if (remaining > 60000) { // 1-2 minutes
+    timerElement.classList.add('warning');
+  } else { // Less than 1 minute
+    timerElement.classList.add('critical');
+  }
+}
+
+function startCountdownDisplay() {
+  const timerElement = document.getElementById('countdownTimer');
+  if (!timerElement) return;
+
+  // Check if inactivity timeout is disabled
+  if (INACTIVITY_TIMEOUT_MINUTES === 0) {
+    console.log('⏸️ Countdown display disabled (inactivity timeout is 0)');
+    return;
+  }
+
+  // Show timer
+  timerElement.style.display = 'flex';
+
+  // Initial update
+  updateCountdownDisplay();
+
+  // Update every second
+  countdownInterval = setInterval(updateCountdownDisplay, 1000);
+
+  console.log('⏱️ Countdown display started');
+}
+
+function stopCountdownDisplay() {
+  const timerElement = document.getElementById('countdownTimer');
+  if (timerElement) {
+    timerElement.style.display = 'none';
+  }
+
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+
+  console.log('⏱️ Countdown display stopped');
 }
 
 async function handleInactivityDisconnect() {
@@ -1213,7 +1292,7 @@ async function initializeAvatarSession() {
     avatarInterface.classList.add("fade-in");
 
     // Add welcome message to chat with markdown support
-    addChatMessage("**Hi! Welcome to Twintik.** I'm Sandeep, Director of TechnoCIT.\n\nI'm here to answer any questions you have about us. You can:\n- Use the **Chat bubble** below to type your text\n- Use the **Mic Icon** to talk to me directly\n\nHow can I help you today?", false);
+    addChatMessage("**Hi!** I'm Sandeep, Director of TechnoCIT.\n\nI'm here to answer any questions you have about us. You can:\n- Use the **Chat bubble** below to type your text\n- Use the **Mic Icon** to talk to me directly\n\nHow can I help you today?", false);
 
     // Test subtitle visibility when avatar interface is shown
     console.log("🎬 Avatar interface shown, testing subtitle...");
@@ -1281,7 +1360,7 @@ async function initializeAvatarSession() {
       if (avatar) {
         try {
           await avatar.speak({
-            text: "Hi. Welcome to Twintik. Im Sandeep, The Director of TechnoCIT and Im here to answer any questions you have about us. You can use the Chat bubble below to type in your text or use the Mic Icon to talk to me directly.",
+            text: "Hi. Im Sandeep, The Director of TechnoCIT and Im here to answer any questions you have about us. You can use the Chat bubble below to type in your text or use the Mic Icon to talk to me directly.",
             task_type: TaskType.REPEAT,
             taskMode: TaskMode.SYNC
           });
@@ -1295,6 +1374,9 @@ async function initializeAvatarSession() {
     // Start inactivity timer
     resetInactivityTimer();
     console.log('✅ Inactivity timer started');
+
+    // Start countdown display
+    startCountdownDisplay();
 
     // Ensure input is properly enabled
     setTimeout(() => {
@@ -2367,6 +2449,10 @@ async function terminateAvatarSession() {
     clearTimeout(inactivityWarningTimer);
     inactivityWarningTimer = null;
   }
+
+  // Stop countdown display
+  stopCountdownDisplay();
+
   console.log('✅ Inactivity timers cleared');
 
   // CRITICAL: Stop all TTS immediately
